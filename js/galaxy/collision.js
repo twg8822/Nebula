@@ -8,6 +8,9 @@
 //                 starts in equilibrium and doesn't drift before the encounter.
 //   companion  Plummer sphere     Φ = -M / √(d² + a²)
 // The two cores attract each other. Gravity constant G = 1.
+// Optional (bhGravity): a central black hole in the host, a compact Plummer
+// mass that swallows particles straying inside its capture radius. Its mass is
+// exaggerated ~100× so the effect is visible at all.
 // Integrator: leapfrog (kick-drift-kick), substepped.
 
 import { generateGalaxy } from './generator.js';
@@ -19,6 +22,17 @@ const LEAD_TIME = 40;      // sim time from the start to closest approach
 const PERI_SPEED = 1.4;    // × v0 at pericenter: a bound, elongated orbit
 const MAX_SUBSTEP = 0.05;
 const MAX_SUBSTEPS = 4;
+
+const BH_MASS_SCALE = 0.08;  // M_bh = scale · v0² · R · bhMass
+const BH_SOFT = 0.15;        // softening length, world units
+const BH_CAPTURE = 0.3;      // capture radius = this · bhMass (inside the drawn shadow)
+const GONE = 1e6;            // swallowed particles are parked far beyond the far plane
+
+/** Black hole mass and capture radius for the current settings (0 when off). */
+function blackHole(cfg, R) {
+  if (!cfg.blackHole || !cfg.bhGravity) return { mass: 0, capture: 0 };
+  return { mass: BH_MASS_SCALE * cfg.v0 * cfg.v0 * R * cfg.bhMass, capture: BH_CAPTURE * cfg.bhMass };
+}
 
 function concat(a, b) {
   const data = new Float32Array(a.data.length + b.data.length);
@@ -52,6 +66,10 @@ export class CollisionSim {
     const sq = Math.sqrt(q);
     this.q = q;
     this.R = R;
+    this.bhOn = !!(cfg.blackHole && cfg.bhGravity);
+    this.bh = blackHole(cfg, R);
+    this.captures = 0;          // particles swallowed so far
+    this.lastCapturePhi = 0;    // disk angle of the latest one (for the flare)
     this.mass = q * v0 * v0 * R;            // host's enclosed mass at R is ≈ v0²R
     const compR = R * sq;
     this.soft = 0.35 * compR;               // Plummer scale length
@@ -111,7 +129,17 @@ export class CollisionSim {
       for (let i = 0; i < nHost + nComp; i++) {
         const isHost = i < nHost;
         const e = i * 9;
-        const r = data[e], h = data[e + 2], lock = data[e + 8];
+        let r = data[e], h = data[e + 2];
+        const lock = data[e + 8];
+        // Keep the starting disk clear of the black hole's grip so nothing is
+        // swallowed at t = 0; only stars knocked onto plunging orbits fall in.
+        if (isHost && this.bhOn) {
+          const s0 = Math.hypot(r, h), keep = 2 * this.bh.capture;
+          if (s0 < keep) {
+            const f = keep / Math.max(s0, 1e-6);
+            if (s0 < 1e-6) { r = keep; h = 0; } else { r *= f; h *= f; }
+          }
+        }
         // Host keeps its current analytic angle so the switch is seamless.
         const th = isHost
           ? data[e + 1] + (angularVelocity(r, v0, rc) + (patternSpeed - angularVelocity(r, v0, rc))
@@ -132,7 +160,10 @@ export class CollisionSim {
           nx = rng.gauss(); ny = rng.gauss() - 1.2; nz = rng.gauss();
         }
         if (isHost) {
-          speed = puffy ? v0 * s / Math.sqrt(s * s + rc * rc) : v0 * r / Math.sqrt(s * s + rc * rc);
+          const rr = puffy ? s : r;
+          // Halo plus (optional) black hole: v² = Σ in-plane pull × radius.
+          const bhPull = this.bh.mass / Math.pow(s * s + BH_SOFT * BH_SOFT, 1.5);
+          speed = rr * Math.sqrt(v0 * v0 / (s * s + rc * rc) + bhPull);
         } else {
           speed = Math.sqrt(this.mass) * (puffy ? s : r) / Math.pow(s * s + this.soft * this.soft, 0.75);
         }
@@ -160,7 +191,9 @@ export class CollisionSim {
     const { H, C, HV, CV } = this;
     const dx = C[0] - H[0], dy = C[1] - H[1], dz = C[2] - H[2];
     const d2 = dx * dx + dy * dy + dz * dz;
-    const fc = -v0 * v0 / (d2 + rc * rc);                         // companion in host halo
+    const b2 = d2 + BH_SOFT * BH_SOFT;
+    const fc = -v0 * v0 / (d2 + rc * rc)                          // companion in host halo
+      - this.bh.mass / (b2 * Math.sqrt(b2));                      // ... and the black hole
     const inv = 1 / Math.sqrt(d2 + this.soft * this.soft);
     const fh = this.mass * inv * inv * inv;                       // host toward companion
     // Friction on the relative velocity near the host, so passes slowly decay.
@@ -199,18 +232,52 @@ export class CollisionSim {
     }
   }
 
+  /** Half-kick with the black hole added; swallows particles inside its capture radius. */
+  _kickBH(dt, v0, rc) {
+    const { pos: p, vel: v, H, C } = this;
+    const v02 = v0 * v0, rc2 = rc * rc, a2 = this.soft * this.soft, M = this.mass;
+    const Mb = this.bh.mass, e2 = BH_SOFT * BH_SOFT, cap2 = this.bh.capture * this.bh.capture;
+    const hx = H[0], hy = H[1], hz = H[2], cx = C[0], cy = C[1], cz = C[2];
+    for (let o = 0, n = p.length; o < n; o += 3) {
+      const x = p[o];
+      if (x === GONE) continue;
+      const y = p[o + 1], z = p[o + 2];
+      const dx = x - hx, dy = y - hy, dz = z - hz;
+      const d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 < cap2) {
+        // Swallowed: remember where (for the flare) and retire the particle.
+        this.captures++;
+        this.lastCapturePhi = Math.atan2(dz, dx);
+        p[o] = p[o + 1] = p[o + 2] = GONE;
+        v[o] = v[o + 1] = v[o + 2] = 0;
+        continue;
+      }
+      const b2 = d2 + e2;
+      const fh = (-v02 / (d2 + rc2) - Mb / (b2 * Math.sqrt(b2))) * dt;
+      const ex = x - cx, ey = y - cy, ez = z - cz;
+      const inv = 1 / Math.sqrt(ex * ex + ey * ey + ez * ez + a2);
+      const fc = -M * inv * inv * inv * dt;
+      v[o] += fh * dx + fc * ex;
+      v[o + 1] += fh * dy + fc * ey;
+      v[o + 2] += fh * dz + fc * ez;
+    }
+  }
+
   /** Advance by dtau sim-time units. */
   step(dtau, cfg) {
     if (!(dtau > 0)) return;
+    // The black hole's mass follows the size slider live (more mass, more feeding).
+    if (this.bhOn) this.bh = blackHole(cfg, this.R);
+    const kick = this.bhOn ? this._kickBH : this._kick;
     const n = Math.min(MAX_SUBSTEPS, Math.ceil(dtau / MAX_SUBSTEP));
     const h = Math.min(dtau, MAX_SUBSTEP * MAX_SUBSTEPS) / n;
     const { v0, rc } = cfg;
     const { pos: p, vel: v } = this;
     for (let s = 0; s < n; s++) {
-      this._kick(h / 2, v0, rc);
+      kick.call(this, h / 2, v0, rc);
       for (let o = 0, len = p.length; o < len; o++) p[o] += v[o] * h;
       this._stepCores(h, v0, rc);
-      this._kick(h / 2, v0, rc);
+      kick.call(this, h / 2, v0, rc);
     }
   }
 

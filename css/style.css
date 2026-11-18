@@ -185,6 +185,12 @@ body.ui-hidden .ui {
 
 .row-toggle .row-label { cursor: pointer; }
 
+.row-hint {
+  margin-left: 6px;
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
 .switch {
   -webkit-appearance: none;
   appearance: none;

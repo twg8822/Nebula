@@ -10,6 +10,7 @@ import { params, config, sanitize } from '../config.js';
  *   commitOnRelease  only apply when the slider is released (for expensive rebuilds)
  *   toggle           0/1 param shown as an on/off switch
  *   showIf           only show this row while that toggle is on
+ *   hint             small dim note after a toggle's label
  *   divider          a thin separator line
  */
 const CONTROLS = [
@@ -27,6 +28,7 @@ const CONTROLS = [
   { key: 'bhMass',      showIf: 'blackHole', format: (v) => v.toFixed(2) },
   { key: 'bhDiskBrightness', showIf: 'blackHole', format: (v) => v.toFixed(2) },
   { key: 'bhFlares',    toggle: true, showIf: 'blackHole' },
+  { key: 'bhGravity',   toggle: true, showIf: 'blackHole', hint: 'collision' },
   { key: 'collision',   toggle: true },
   { key: 'companionMass', showIf: 'collision', commitOnRelease: true, format: (v) => `${Math.round(v * 100)}%` },
   { key: 'encounterTilt', showIf: 'collision', commitOnRelease: true, format: (v) => `${v}°${v > 90 ? ' retro' : ''}` },
@@ -63,6 +65,7 @@ export function createPanel({ onChange, onRandomize }) {
       const input = el('input', { type: 'checkbox', id, className: 'switch' });
       input.setAttribute('role', 'switch');
       const label = el('label', { htmlFor: id, className: 'row-label', textContent: params[ctl.key].label });
+      if (ctl.hint) label.append(el('span', { className: 'row-hint', textContent: ctl.hint }));
       const row = el('div', { className: 'row row-toggle' }, [label, input]);
       rows.push(() => {
         if (ctl.showIf) row.hidden = !config[ctl.showIf];

@@ -40,6 +40,7 @@ function start() {
   const compositor = new Compositor(gl);
   const accretion = new AccretionDisk(gl);
   const flares = new FlareTimer();
+  let seenCaptures = 0;
   const camera = new OrbitCamera(canvas);
 
   let dpr = 1;
@@ -51,6 +52,7 @@ function start() {
     const galaxy = generateGalaxy(config);
     const wasColliding = !!sim;
     sim = null;
+    seenCaptures = 0;
     if (config.collision) {
       // Start from the host's current analytic pose so nothing jumps.
       sim = new CollisionSim(config, galaxy, simTime * config.windingRate);
@@ -93,6 +95,10 @@ function start() {
   const panel = createPanel({
     onChange(key) {
       if (params[key].kind === 'regen') scheduleRegenerate();
+      // Black hole gravity is part of the collision physics: restart it.
+      else if (config.collision && (key === 'bhGravity' || (key === 'blackHole' && config.bhGravity))) {
+        scheduleRegenerate();
+      }
       // 'uniform' params are read straight from config next frame.
     },
     onRandomize: randomizeGalaxy,
@@ -157,12 +163,15 @@ function start() {
     }
     const hostCenter = sim ? sim.H : ORIGIN;
 
-    // Tidal disruptions: occasional random flares on the accretion disk.
+    // Tidal disruptions: random flares, plus a real one whenever the collision
+    // sim reports a star swallowed by the black hole (bhGravity).
     if (config.blackHole && config.bhFlares) {
       if (!paused) flares.update(dt);
+      if (sim && sim.captures > seenCaptures) flares.trigger(sim.lastCapturePhi);
     } else {
       flares.stop();
     }
+    if (sim) seenCaptures = sim.captures;
 
     resize();
     const width = canvas.width;

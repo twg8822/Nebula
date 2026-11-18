@@ -59,6 +59,7 @@ export const params = {
   bhDiskBrightness: { value: 2.0, min: 0,   max: 8,      step: 0.05,  kind: 'uniform', label: 'Accretion glow' },
   bhDoppler:     { value: 0.4,   min: 0,    max: 0.9,    step: 0.01,  kind: 'uniform', label: 'Doppler beaming' },  // β
   bhFlares:      { value: 0,     min: 0,    max: 1,      step: 1,     kind: 'uniform', label: 'Tidal disruptions' },  // stars shredded into flares
+  bhGravity:     { value: 0,     min: 0,    max: 1,      step: 1,     kind: 'uniform', label: 'Black hole gravity' }, // collision mode only; restarts it
 
   // Galaxy collision: CPU N-body with a companion falling in.
   collision:     { value: 0,     min: 0,    max: 1,      step: 1,     kind: 'regen',   label: 'Collision' },
