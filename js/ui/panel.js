@@ -26,6 +26,10 @@ const CONTROLS = [
   { key: 'blackHole',   toggle: true },
   { key: 'bhMass',      showIf: 'blackHole', format: (v) => v.toFixed(2) },
   { key: 'bhDiskBrightness', showIf: 'blackHole', format: (v) => v.toFixed(2) },
+  { key: 'collision',   toggle: true },
+  { key: 'companionMass', showIf: 'collision', commitOnRelease: true, format: (v) => `${Math.round(v * 100)}%` },
+  { key: 'encounterTilt', showIf: 'collision', commitOnRelease: true, format: (v) => `${v}°${v > 90 ? ' retro' : ''}` },
+  { key: 'collisionRate', showIf: 'collision', format: (v) => `${v.toFixed(2)}×` },
 ];
 
 const STORAGE_KEY = 'nebula.panelCollapsed';

@@ -4,10 +4,30 @@
 
 export { SPRITE_FS as STAR_FS } from './common.js';
 
-export const STAR_VS = /* glsl */ `#version 300 es
+// Position source, spliced into the shared vertex shader below.
+const ANALYTIC = {
+  decl: '',
+  body: `
+  float r = aOrbit.x;
+  // Rotation curve v(r) = v0 * r / sqrt(r² + rc²)  =>  Ω(r) = v0 / sqrt(r² + rc²)
+  float omega = uV0 * inversesqrt(r * r + uRc * uRc);
+  omega = mix(omega, uPatternSpeed, clamp(aLock * uArmLock, 0.0, 1.0));
+  float th = aOrbit.y + omega * uTime;
+  vec3 p = vec3(r * cos(th), aOrbit.z, r * sin(th));`,
+};
+
+// Collision mode: world positions integrated on the CPU (js/galaxy/collision.js).
+const POSITIONAL = {
+  decl: 'layout(location = 3) in vec3 aPos;     // world position from the N-body sim',
+  body: `
+  vec3 p = aPos;`,
+};
+
+const starVS = ({ decl, body }) => /* glsl */ `#version 300 es
 layout(location = 0) in vec4 aOrbit;   // r, theta0, height, worldSize
 layout(location = 1) in vec4 aColor;   // rgb, brightness
 layout(location = 2) in float aLock;   // 0 = own orbit, 1 = rides the arm pattern
+${decl}
 
 uniform mat4  uViewProj;
 uniform float uTime;          // galaxy time (already scaled by windingRate)
@@ -23,13 +43,7 @@ uniform float uNearFade;      // >0: fade out within this distance of the camera
 
 out vec3 vColor;
 
-void main() {
-  float r = aOrbit.x;
-  // Rotation curve v(r) = v0 * r / sqrt(r² + rc²)  =>  Ω(r) = v0 / sqrt(r² + rc²)
-  float omega = uV0 * inversesqrt(r * r + uRc * uRc);
-  omega = mix(omega, uPatternSpeed, clamp(aLock * uArmLock, 0.0, 1.0));
-  float th = aOrbit.y + omega * uTime;
-  vec3 p = vec3(r * cos(th), aOrbit.z, r * sin(th));
+void main() {${body}
 
   gl_Position = uViewProj * vec4(p, 1.0);
 
@@ -42,6 +56,9 @@ void main() {
   gl_PointSize = px;
   vColor = aColor.rgb * aColor.a * energy * fade * uIntensity;
 }`;
+
+export const STAR_VS = starVS(ANALYTIC);
+export const STAR_VS_POS = starVS(POSITIONAL);
 
 /** Additive soft glow with no visible core (unresolved starlight, nebulae). */
 export const HAZE_FS = /* glsl */ `#version 300 es

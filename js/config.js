@@ -58,6 +58,13 @@ export const params = {
   bhMass:        { value: 0.6,   min: 0.1,  max: 2,      step: 0.01,  kind: 'uniform', label: 'Black hole size' }, // Einstein radius, world units
   bhDiskBrightness: { value: 2.0, min: 0,   max: 8,      step: 0.05,  kind: 'uniform', label: 'Accretion glow' },
   bhDoppler:     { value: 0.4,   min: 0,    max: 0.9,    step: 0.01,  kind: 'uniform', label: 'Doppler beaming' },  // β
+
+  // Galaxy collision: CPU N-body with a companion falling in.
+  collision:     { value: 0,     min: 0,    max: 1,      step: 1,     kind: 'regen',   label: 'Collision' },
+  companionMass: { value: 0.35,  min: 0.05, max: 1,      step: 0.01,  kind: 'regen',   label: 'Companion mass' },   // mass ratio q
+  encounterTilt: { value: 30,    min: 0,    max: 180,    step: 1,     kind: 'regen',   label: 'Encounter tilt', random: [10, 60] }, // >90° = retrograde
+  pericenter:    { value: 1.0,   min: 0.5,  max: 3,      step: 0.05,  kind: 'regen',   label: 'Closest approach' }, // × galaxyRadius
+  collisionRate: { value: 1.5,   min: 0,    max: 3,      step: 0.05,  kind: 'uniform', label: 'Collision speed' },
 };
 
 /** Live config values: `config.starCount`, etc. */
