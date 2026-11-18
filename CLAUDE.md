@@ -3,7 +3,7 @@
 Notes for Claude Code about this project. Claude reads this file at the start of every session.
 
 ## Project overview
-**NEBULA**: a browser-based generative galaxy simulator. It draws tens of thousands of stars in logarithmic spiral arms with differential rotation, additive HDR glow, a bright core, and a twinkling background, plus a glass control panel with Randomize. Toggleable extras: a supermassive black hole (accretion disk + lensing, with optional tidal disruption flares and, in collision mode, gravity), galaxy collision mode (CPU N-body), and a cinematic auto-orbit camera. Planned additions: presets and bloom.
+**NEBULA**: a browser-based generative galaxy simulator. It draws tens of thousands of stars in logarithmic spiral arms with differential rotation, additive HDR glow, a bright core, and a twinkling background, plus a glass control panel with Randomize. A Preset dropdown loads JSON presets from `presets/`. Toggleable extras: a supermassive black hole (accretion disk + lensing, with optional tidal disruption flares and, in collision mode, gravity), galaxy collision mode (CPU N-body), and a cinematic auto-orbit camera. Planned additions: shareable links and bloom.
 
 ## Tech stack
 - Vanilla JavaScript ES modules, WebGL2, plain HTML/CSS.
@@ -24,6 +24,10 @@ Notes for Claude Code about this project. Claude reads this file at the start of
 - `js/main.js`: bootstrap, resize/DPR, render loop, pass order (see Notes), collision stepping, and the flare timer. Exposes `window.nebula` (config, regenerate, randomize, camera, flares, sim).
 - `js/config.js`: every tunable parameter, with min/max/step, `label`, `kind` (`regen` = rebuild buffers, `uniform` = live), and an optional `random` range that `randomize()` draws from. To make a param randomizable, give it a `random` range here.
 - `js/ui/panel.js`: glass control panel. Its `CONTROLS` list picks which params to show and how to format them; ranges and labels come from `config.js`. `regen` changes trigger a debounced regenerate in `main.js`. Row options: `toggle` (0/1 param as a switch), `showIf` (only visible while that toggle is on; works on toggles too), `hint` (small dim note after a toggle's label), `divider`, `commitOnRelease`, `invert`. Feature toggles are 0/1 numbers in `config.js` with no `random` range, so Randomize never flips them and `?blackHole=1` works as a URL param.
+- `presets/`: one JSON file per preset (kebab-case name, every `config.js` key, numbers only) plus `index.json` (sorted array of file names, which the dropdown reads). `presets/default.json` mirrors the user's defaults. Validate with `python3 .claude/skills/preset/validate.py --all`.
+- `js/ui/presets.js`: `loadPresets()` reads `presets/index.json`, falling back to the http.server directory listing. `applyPreset()` in `config.js` resets every key to its default, then applies the preset with `sanitize()`. The panel's "Preset" select goes back to "Custom" after any manual change, Randomize or `C`.
+- `.claude/skills/preset/`: the `/preset <description>` skill (SKILL.md, with a vibe→knob guide and a JSON schema generated from config.js) and `validate.py`, which checks presets against the live `config.js`.
+- **When you add, remove or re-range a param in `config.js`**: update `presets/default.json` if the default changed, then run the validator. Missing keys fail validation (the app itself falls back to defaults for them). Regenerate the schema in `SKILL.md` too.
 - Anything with class `.ui` is hidden by `H` (via `body.ui-hidden`).
 - `js/galaxy/generator.js`: builds per-particle orbital elements (r, θ0, height, size, rgb, brightness, lock) for stars (arm, bulge, field and halo populations), haze and dust.
 - `js/galaxy/rotation.js`: rotation curve Ω(r) = v0/√(r²+rc²). **It must match** `js/shaders/stars.js`.

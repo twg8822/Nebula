@@ -1,4 +1,5 @@
-import { config, params, applyQueryOverrides, randomize } from './config.js';
+import { config, params, applyQueryOverrides, randomize, applyPreset } from './config.js';
+import { loadPresets } from './ui/presets.js';
 import { createPanel } from './ui/panel.js';
 import { createContext } from './gl/context.js';
 import { createHDRTarget } from './gl/framebuffer.js';
@@ -102,7 +103,15 @@ function start() {
       // 'uniform' params are read straight from config next frame.
     },
     onRandomize: randomizeGalaxy,
+    onPreset(preset) {
+      applyPreset(preset.values);
+      panel.sync();
+      clearTimeout(regenTimer);
+      regenerate();
+      console.info(`[nebula] preset "${preset.name}"`);
+    },
   });
+  loadPresets().then((list) => panel.setPresets(list));
 
   function randomizeGalaxy() {
     randomize();
@@ -127,7 +136,10 @@ function start() {
         pauseLabel.textContent = paused ? 'resume' : 'pause';
         break;
       case 'KeyR':
-        if (!e.repeat) randomizeGalaxy();
+        if (!e.repeat) {
+          randomizeGalaxy();
+          panel.markCustom();
+        }
         break;
       case 'KeyH':
         document.body.classList.toggle('ui-hidden');
@@ -138,6 +150,7 @@ function start() {
       case 'KeyC':
         config.autoOrbit = config.autoOrbit ? 0 : 1;
         panel.sync();
+        panel.markCustom();
         break;
     }
   });

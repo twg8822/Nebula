@@ -15,7 +15,8 @@ A generative galaxy simulator that runs in the browser. It draws tens of thousan
   - **Black hole gravity** (collision mode). The black hole pulls on nearby stars and swallows any that stray too close, and each capture sets off a flare. Its mass is exaggerated so the effect is visible.
 - **Galaxy collisions.** A smaller companion galaxy falls in on a curved orbit. About 40 seconds after you switch it on (at the default 1× collision speed), it swings past and pulls long tidal tails out of both galaxies, then keeps coming back until the two merge. Its pace is set by its own **Collision speed** slider, separate from the galaxy's rotation speed. This runs as restricted N-body physics on the CPU.
 - **Cinematic camera.** After a few idle seconds the camera slowly orbits, with a swaying tilt and gentle zoom. Dragging takes over smoothly and spins with inertia.
-- **Control panel.** Live sliders for star count, arms, tightness, rotation speed, core size, color temperature and glow, plus switches for the cinematic camera, black hole and collision mode. Each switch reveals its own settings when you turn it on. One click on **Randomize** gives you a new galaxy, and it never flips the switches.
+- **Control panel.** Live sliders for star count, arms, tightness, rotation speed, core size, color temperature, a color filter (off by default; slide it up to tint the whole galaxy any hue) and glow, plus switches for the cinematic camera, black hole and collision mode. Each switch reveals its own settings when you turn it on. One click on **Randomize** gives you a new galaxy, and it never flips the switches.
+- **Presets.** The **Preset** dropdown at the top of the panel loads a saved look. Every preset sets every setting, and **Default** returns to the starting galaxy.
 - **No dependencies.** Plain JavaScript and WebGL2, with no frameworks, no build step and no npm.
 
 ## Running it
@@ -59,6 +60,16 @@ nebula.regenerate();
 nebula.flares.trigger(0);   // fire a tidal disruption flare now (black hole + flares on)
 ```
 
+## Presets
+
+Presets live in [`presets/`](presets) as JSON files that use exactly the same keys as `js/config.js`. The dropdown loads everything listed in `presets/index.json` (or, when that's missing, everything in the folder listing that `python3 -m http.server` shows). The file name becomes the display name, so `neon-whirlpool.json` shows as "Neon Whirlpool".
+
+With [Claude Code](https://claude.com/claude-code), type `/preset <description>` (for example `/preset a calm, icy spiral with a hungry black hole`). The project skill in `.claude/skills/preset/` designs the preset, saves it, adds it to the index and validates it. To check presets by hand:
+
+```bash
+python3 .claude/skills/preset/validate.py --all
+```
+
 ## How it works
 
 - **Generation** (`js/galaxy/generator.js`): each star gets orbital elements (radius, starting angle, height, size, color, brightness) for its population: arm, bulge, field or halo.
@@ -81,9 +92,11 @@ js/shaders/         GLSL shaders as JS template strings
 js/gl/              WebGL2 context, shader programs, HDR framebuffer
 js/camera/          orbit camera with the cinematic auto-orbit
 js/ui/panel.js      control panel
+js/ui/presets.js    loads presets/ for the Preset dropdown
+presets/            saved galaxy presets (JSON) and index.json
 ```
 
 ## Roadmap
 
-- Presets and shareable links
+- Shareable links
 - Bloom

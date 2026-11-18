@@ -96,6 +96,24 @@ export function applyQueryOverrides(search = location.search) {
 }
 
 /**
+ * Load a preset (see presets/ and the /preset skill): every param goes back to
+ * its default, then the preset's values are applied, snapped to range and
+ * step. Keys a preset doesn't know about keep their defaults, so older presets
+ * keep working as params are added. Unknown keys are ignored with a warning.
+ */
+export function applyPreset(values) {
+  for (const [key, p] of Object.entries(params)) config[key] = p.value;
+  for (const [key, v] of Object.entries(values)) {
+    if (!params[key]) {
+      console.warn(`[nebula] preset has unknown key "${key}"; ignored`);
+      continue;
+    }
+    const n = Number(v);
+    if (Number.isFinite(n)) config[key] = sanitize(key, n);
+  }
+}
+
+/**
  * Re-roll every param that declares a `random` range, plus the seed.
  * Star count, speed and other user/perf choices are left alone.
  */

@@ -52,11 +52,30 @@ function el(tag, props = {}, children = []) {
  * @param {object} opts
  * @param {(key: string) => void} opts.onChange  called after config[key] changes
  * @param {() => void} opts.onRandomize
+ * @param {(preset: {name: string, values: object}) => void} [opts.onPreset]  a preset was picked
  */
-export function createPanel({ onChange, onRandomize }) {
+export function createPanel({ onChange, onRandomize, onPreset = () => {} }) {
   const rows = [];
 
   const body = el('div', { className: 'panel-body', id: 'panel-body' });
+
+  // Presets dropdown (filled by setPresets once presets/ has loaded; hidden while empty).
+  const presetSelect = el('select', { id: 'ctl-preset', className: 'preset-select' });
+  presetSelect.append(el('option', { value: '', textContent: 'Custom' }));
+  const presetRow = el('div', { className: 'row row-preset' }, [
+    el('label', { htmlFor: 'ctl-preset', className: 'row-label', textContent: 'Preset' }),
+    presetSelect,
+  ]);
+  presetRow.hidden = true;
+  let presetList = [];
+  presetSelect.addEventListener('change', () => {
+    const preset = presetList[Number(presetSelect.value)];
+    if (preset) onPreset(preset);
+    presetSelect.blur(); // keep Space/R/H/F/C working
+  });
+  // Any manual change means the settings no longer match the chosen preset.
+  const markCustom = () => { presetSelect.value = ''; };
+  body.append(presetRow, el('div', { className: 'panel-divider' }));
 
   const sync = () => rows.forEach((render) => render());
 
@@ -78,6 +97,7 @@ export function createPanel({ onChange, onRandomize }) {
       });
       input.addEventListener('change', () => {
         config[ctl.key] = input.checked ? 1 : 0;
+        markCustom();
         sync(); // shows/hides dependent rows
         onChange(ctl.key);
         input.blur(); // keep Space/R/H/F working
@@ -108,6 +128,7 @@ export function createPanel({ onChange, onRandomize }) {
 
     const apply = () => {
       config[ctl.key] = sanitize(ctl.key, fromSlider(Number(input.value)));
+      markCustom();
       render();
       onChange(ctl.key);
     };
@@ -134,6 +155,7 @@ export function createPanel({ onChange, onRandomize }) {
   });
   randomizeBtn.addEventListener('click', () => {
     onRandomize();
+    markCustom();
     randomizeBtn.blur(); // so Space doesn't re-trigger it
   });
   body.append(randomizeBtn);
@@ -165,5 +187,13 @@ export function createPanel({ onChange, onRandomize }) {
 
   sync();
 
-  return { sync, element: panel };
+  /** Fill the dropdown; the row stays hidden if there are no presets. */
+  const setPresets = (list) => {
+    presetList = list;
+    presetSelect.replaceChildren(el('option', { value: '', textContent: 'Custom' }),
+      ...list.map((preset, i) => el('option', { value: String(i), textContent: preset.name })));
+    presetRow.hidden = list.length === 0;
+  };
+
+  return { sync, setPresets, markCustom, element: panel };
 }
