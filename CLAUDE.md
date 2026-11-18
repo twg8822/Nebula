@@ -3,7 +3,7 @@
 Notes for Claude Code about this project. Claude reads this file at the start of every session.
 
 ## Project overview
-**NEBULA**: a browser-based generative galaxy simulator. It draws tens of thousands of stars in logarithmic spiral arms with differential rotation, additive HDR glow, a bright core, and a twinkling background. Planned additions: a control panel, presets, a black hole, galaxy collisions, and a cinematic camera.
+**NEBULA**: a browser-based generative galaxy simulator. It draws tens of thousands of stars in logarithmic spiral arms with differential rotation, additive HDR glow, a bright core, and a twinkling background, plus a glass control panel with Randomize. Planned additions: presets, a black hole, galaxy collisions, and a cinematic camera.
 
 ## Tech stack
 - Vanilla JavaScript ES modules, WebGL2, plain HTML/CSS.
@@ -17,6 +17,8 @@ Notes for Claude Code about this project. Claude reads this file at the start of
 - Test / lint: none yet.
 
 ## Project structure
+- `README.md`: the public description on GitHub (features, controls, how it works, roadmap). Update its Features and Roadmap sections when a phase ships.
+- `docs/preview.gif`: the animated preview at the top of the README, with the HUD and panel visible on purpose. To re-record it: Ubuntu's screen recorder gives a `.webm`, and ffmpeg isn't installed, so extract frames with `gst-launch-1.0` (720 px wide, 12 fps) and assemble the GIF with Pillow using one shared palette. Keep it under ~10 MB (about 10 s), and keep the raw `.webm` out of git.
 - `index.html`, `css/style.css`: full-screen canvas and HUD.
 - `js/main.js`: bootstrap, resize/DPR, render loop, and pass order (background → stars → core glow into HDR, then tone-map).
 - `js/config.js`: every tunable parameter, with min/max/step, `label`, `kind` (`regen` = rebuild buffers, `uniform` = live), and an optional `random` range that `randomize()` draws from. To make a param randomizable, give it a `random` range here.
@@ -30,7 +32,7 @@ Notes for Claude Code about this project. Claude reads this file at the start of
 - `js/camera/camera.js`: orbit camera. The disk lies in the XZ plane, with Y up.
 
 ## Conventions
-- Default git branch is `main`.
+- Default git branch is `main`. The remote is `origin` → https://github.com/Trent5174/nebula (HTTPS through `gh`).
 - Keep commits small and focused, with clear messages.
 - Only commit or push when asked.
 
