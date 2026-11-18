@@ -8,6 +8,9 @@ import { params, config, sanitize } from '../config.js';
  * Panel rows, in display order.
  *   invert           flips the slider direction
  *   commitOnRelease  only apply when the slider is released (for expensive rebuilds)
+ *   toggle           0/1 param shown as an on/off switch
+ *   showIf           only show this row while that toggle is on
+ *   divider          a thin separator line
  */
 const CONTROLS = [
   { key: 'starCount',   commitOnRelease: true, format: (v) => v.toLocaleString() },
@@ -17,6 +20,9 @@ const CONTROLS = [
   { key: 'bulgeRadius', format: (v) => v.toFixed(2) },
   { key: 'colorTemp',   format: (v) => (Math.abs(v) < 0.005 ? 'neutral' : `${v > 0 ? 'warm' : 'cool'} ${Math.abs(v).toFixed(2)}`) },
   { key: 'glow',        format: (v) => `${Math.round(v * 100)}%` },
+  { divider: true },
+  { key: 'autoOrbit',   toggle: true },
+  { key: 'orbitSpeed',  showIf: 'autoOrbit', format: (v) => v.toFixed(2) },
 ];
 
 const STORAGE_KEY = 'nebula.panelCollapsed';
@@ -37,7 +43,30 @@ export function createPanel({ onChange, onRandomize }) {
 
   const body = el('div', { className: 'panel-body', id: 'panel-body' });
 
+  const sync = () => rows.forEach((render) => render());
+
   for (const ctl of CONTROLS) {
+    if (ctl.divider) {
+      body.append(el('div', { className: 'panel-divider' }));
+      continue;
+    }
+    if (ctl.toggle) {
+      const id = `ctl-${ctl.key}`;
+      const input = el('input', { type: 'checkbox', id, className: 'switch' });
+      input.setAttribute('role', 'switch');
+      const label = el('label', { htmlFor: id, className: 'row-label', textContent: params[ctl.key].label });
+      const row = el('div', { className: 'row row-toggle' }, [label, input]);
+      rows.push(() => { input.checked = !!config[ctl.key]; });
+      input.addEventListener('change', () => {
+        config[ctl.key] = input.checked ? 1 : 0;
+        sync(); // shows/hides dependent rows
+        onChange(ctl.key);
+        input.blur(); // keep Space/R/H/F working
+      });
+      body.append(row);
+      continue;
+    }
+
     const p = params[ctl.key];
     const id = `ctl-${ctl.key}`;
     const input = el('input', { type: 'range', id, min: p.min, max: p.max, step: p.step });
@@ -50,6 +79,7 @@ export function createPanel({ onChange, onRandomize }) {
     const fromSlider = (s) => (ctl.invert ? p.min + p.max - s : s);
 
     const render = () => {
+      if (ctl.showIf) row.hidden = !config[ctl.showIf];
       const v = config[ctl.key];
       input.value = String(toSlider(v));
       output.value = ctl.format(v, p);
@@ -114,7 +144,6 @@ export function createPanel({ onChange, onRandomize }) {
 
   document.body.append(panel);
 
-  const sync = () => rows.forEach((render) => render());
   sync();
 
   return { sync, element: panel };

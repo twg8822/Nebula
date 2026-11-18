@@ -10,6 +10,8 @@ import { BackgroundLayer, generateBackground } from './render/backgroundLayer.js
 import { CoreGlow, Compositor } from './render/compositor.js';
 import { OrbitCamera } from './camera/camera.js';
 
+const DEG = Math.PI / 180;
+
 const canvas = document.getElementById('nebula');
 const hud = document.getElementById('hud');
 
@@ -105,6 +107,10 @@ function start() {
       case 'KeyF':
         hud.hidden = !hud.hidden;
         break;
+      case 'KeyC':
+        config.autoOrbit = config.autoOrbit ? 0 : 1;
+        panel.sync();
+        break;
     }
   });
 
@@ -124,7 +130,11 @@ function start() {
     resize();
     const width = canvas.width;
     const height = canvas.height;
-    camera.update(width / height);
+    camera.update(width / height, dt, {
+      auto: !!config.autoOrbit,
+      orbitSpeed: config.orbitSpeed,
+      tilt: config.tiltDeg * DEG,
+    });
     const pointScale = camera.pointScale(height);
 
     // HDR accumulation pass: light is added (background, haze, stars, core),

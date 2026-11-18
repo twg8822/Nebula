@@ -46,6 +46,12 @@ export const params = {
   dustOpacity:   { value: 1.0,   min: 0,    max: 4,      step: 0.05,  kind: 'uniform', label: 'Dust opacity',  random: [0.8, 1.3] },
   bgBrightness:  { value: 1.0,   min: 0,    max: 3,      step: 0.05,  kind: 'uniform', label: 'Background' },
   twinkle:       { value: 0.35,  min: 0,    max: 1,      step: 0.01,  kind: 'uniform', label: 'Twinkle' },
+
+  // --- features (0/1 toggles; no `random`, so Randomize never flips them) ---
+  // Cinematic camera: slow auto-orbit with a swaying tilt after a few idle seconds.
+  autoOrbit:     { value: 1,     min: 0,    max: 1,      step: 1,     kind: 'uniform', label: 'Cinematic camera' },
+  orbitSpeed:    { value: 0.05,  min: 0,    max: 0.3,    step: 0.01,  kind: 'uniform', label: 'Orbit speed' },      // rad/s
+  tiltDeg:       { value: 12,    min: 0,    max: 30,     step: 1,     kind: 'uniform', label: 'Camera tilt' },      // ± degrees
 };
 
 /** Live config values: `config.starCount`, etc. */
