@@ -7,7 +7,7 @@ import { angularVelocity } from './galaxy/rotation.js';
 import { StarLayer } from './render/starLayer.js';
 import { HAZE_FS, DUST_FS } from './shaders/stars.js';
 import { BackgroundLayer, generateBackground } from './render/backgroundLayer.js';
-import { CoreGlow, Compositor, projectToScreen } from './render/compositor.js';
+import { CoreGlow, Compositor, projectToScreen, colorFilter } from './render/compositor.js';
 import { AccretionDisk, FlareTimer, BH_HORIZON } from './render/blackHole.js';
 import { CollisionSim } from './galaxy/collision.js';
 import { OrbitCamera } from './camera/camera.js';
@@ -264,6 +264,7 @@ function start() {
     compositor.draw(hdr.texture, {
       exposure: config.exposure,
       temperature: config.colorTemp,
+      tint: colorFilter(config.tintHue, config.tintStrength),
       width,
       height,
       lens,

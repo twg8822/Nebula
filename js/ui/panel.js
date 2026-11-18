@@ -20,6 +20,8 @@ const CONTROLS = [
   { key: 'timeScale',   format: (v) => `${v.toFixed(1)}×` },
   { key: 'bulgeRadius', format: (v) => v.toFixed(2) },
   { key: 'colorTemp',   format: (v) => (Math.abs(v) < 0.005 ? 'neutral' : `${v > 0 ? 'warm' : 'cool'} ${Math.abs(v).toFixed(2)}`) },
+  { key: 'tintStrength', format: (v) => (v > 0 ? `${Math.round(v * 100)}%` : 'off') },
+  { key: 'tintHue',     showIf: 'tintStrength', format: (v) => `${v}° ${hueName(v)}` },
   { key: 'glow',        format: (v) => `${Math.round(v * 100)}%` },
   { divider: true },
   { key: 'autoOrbit',   toggle: true },
@@ -36,6 +38,9 @@ const CONTROLS = [
 ];
 
 const STORAGE_KEY = 'nebula.panelCollapsed';
+
+const HUE_NAMES = [[15, 'red'], [45, 'orange'], [70, 'yellow'], [160, 'green'], [200, 'cyan'], [260, 'blue'], [300, 'violet'], [340, 'magenta'], [360, 'red']];
+const hueName = (deg) => HUE_NAMES.find(([upTo]) => deg <= upTo)[1];
 
 function el(tag, props = {}, children = []) {
   const node = Object.assign(document.createElement(tag), props);

@@ -23,6 +23,7 @@ in vec2 vUv;
 uniform sampler2D uScene;
 uniform float uExposure;
 uniform float uTemperature;  // -1 cool … 0 neutral … +1 warm
+uniform vec3  uTint;         // color filter multiplier; exactly (1,1,1) when off
 out vec4 outColor;
 
 #ifdef LENSING
@@ -69,9 +70,9 @@ void main() {
   // The secondary image is tiny and aliases without mipmaps: dim it.
   float lensGain = mix(0.55, 1.0, smoothstep(0.85 * uThetaE, 1.1 * uThetaE, th));
   lensGain *= smoothstep(uHorizon * 0.94, uHorizon * 1.04, th);  // the shadow
-  vec3 c = max(texture(uScene, uv).rgb, 0.0) * lensGain * uExposure * temperatureTint(uTemperature);
+  vec3 c = max(texture(uScene, uv).rgb, 0.0) * lensGain * uExposure * temperatureTint(uTemperature) * uTint;
 #else
-  vec3 c = max(texture(uScene, vUv).rgb, 0.0) * uExposure * temperatureTint(uTemperature);
+  vec3 c = max(texture(uScene, vUv).rgb, 0.0) * uExposure * temperatureTint(uTemperature) * uTint;
 #endif
 
   // Tone-map luminance and keep hue, so a dense warm core stays yellow-orange
