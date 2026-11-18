@@ -52,6 +52,12 @@ export const params = {
   autoOrbit:     { value: 1,     min: 0,    max: 1,      step: 1,     kind: 'uniform', label: 'Cinematic camera' },
   orbitSpeed:    { value: 0.05,  min: 0,    max: 0.3,    step: 0.01,  kind: 'uniform', label: 'Orbit speed' },      // rad/s
   tiltDeg:       { value: 12,    min: 0,    max: 30,     step: 1,     kind: 'uniform', label: 'Camera tilt' },      // ± degrees
+
+  // Supermassive black hole: horizon, accretion disk, screen-space lensing.
+  blackHole:     { value: 0,     min: 0,    max: 1,      step: 1,     kind: 'uniform', label: 'Black hole' },
+  bhMass:        { value: 0.6,   min: 0.1,  max: 2,      step: 0.01,  kind: 'uniform', label: 'Black hole size' }, // Einstein radius, world units
+  bhDiskBrightness: { value: 2.0, min: 0,   max: 8,      step: 0.05,  kind: 'uniform', label: 'Accretion glow' },
+  bhDoppler:     { value: 0.4,   min: 0,    max: 0.9,    step: 0.01,  kind: 'uniform', label: 'Doppler beaming' },  // β
 };
 
 /** Live config values: `config.starCount`, etc. */

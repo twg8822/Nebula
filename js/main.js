@@ -7,10 +7,12 @@ import { angularVelocity } from './galaxy/rotation.js';
 import { StarLayer } from './render/starLayer.js';
 import { HAZE_FS, DUST_FS } from './shaders/stars.js';
 import { BackgroundLayer, generateBackground } from './render/backgroundLayer.js';
-import { CoreGlow, Compositor } from './render/compositor.js';
+import { CoreGlow, Compositor, projectToScreen } from './render/compositor.js';
+import { AccretionDisk, BH_HORIZON } from './render/blackHole.js';
 import { OrbitCamera } from './camera/camera.js';
 
 const DEG = Math.PI / 180;
+const ORIGIN = [0, 0, 0];
 
 const canvas = document.getElementById('nebula');
 const hud = document.getElementById('hud');
@@ -33,6 +35,7 @@ function start() {
   const background = new BackgroundLayer(gl);
   const core = new CoreGlow(gl);
   const compositor = new Compositor(gl);
+  const accretion = new AccretionDisk(gl);
   const camera = new OrbitCamera(canvas);
 
   let dpr = 1;
@@ -127,6 +130,8 @@ function start() {
     realTime += dt;
     if (!paused) simTime += dt * config.timeScale;
 
+    const hostCenter = ORIGIN;
+
     resize();
     const width = canvas.width;
     const height = canvas.height;
@@ -171,14 +176,36 @@ function start() {
       intensity: config.coreGlow * config.glow,
       width,
       height,
+      center: hostCenter,
     });
+    if (config.blackHole) {
+      accretion.draw({
+        viewProj: camera.viewProj,
+        center: hostCenter,
+        eye: camera.eye,
+        mass: config.bhMass,
+        brightness: config.bhDiskBrightness,
+        doppler: config.bhDoppler,
+        time: simTime,
+      });
+    }
     dust.draw({ ...orbit, sizeScale: 1, intensity: config.dustOpacity });
 
+    // Lensing is screen-space, centred on the projected black hole.
+    let lens = null;
+    if (config.blackHole) {
+      const sp = projectToScreen(camera.viewProj, hostCenter, width, height);
+      if (sp) {
+        const thetaE = (config.bhMass * pointScale) / sp.w;
+        lens = { x: sp.x, y: sp.y, thetaE, horizon: thetaE * BH_HORIZON };
+      }
+    }
     compositor.draw(hdr.texture, {
       exposure: config.exposure,
       temperature: config.colorTemp,
       width,
       height,
+      lens,
     });
 
     // HUD

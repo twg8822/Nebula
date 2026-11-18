@@ -23,6 +23,9 @@ const CONTROLS = [
   { divider: true },
   { key: 'autoOrbit',   toggle: true },
   { key: 'orbitSpeed',  showIf: 'autoOrbit', format: (v) => v.toFixed(2) },
+  { key: 'blackHole',   toggle: true },
+  { key: 'bhMass',      showIf: 'blackHole', format: (v) => v.toFixed(2) },
+  { key: 'bhDiskBrightness', showIf: 'blackHole', format: (v) => v.toFixed(2) },
 ];
 
 const STORAGE_KEY = 'nebula.panelCollapsed';

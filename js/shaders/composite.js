@@ -25,6 +25,14 @@ uniform float uExposure;
 uniform float uTemperature;  // -1 cool … 0 neutral … +1 warm
 out vec4 outColor;
 
+#ifdef LENSING
+// Point-mass gravitational lens around the black hole, in pixels.
+uniform vec2  uBH;           // black hole position
+uniform float uThetaE;       // Einstein radius
+uniform float uHorizon;      // shadow radius
+uniform vec2  uResolution;
+#endif
+
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
 
 // White-balance tint, normalized so overall brightness stays constant.
@@ -48,7 +56,23 @@ float hash(vec2 p) {
 }
 
 void main() {
+#ifdef LENSING
+  // Thin-lens mapping: light seen at distance θ came from θ - θE²/θ, so each
+  // pixel samples the unlensed scene closer in (or, inside θE, from the
+  // opposite side: the inverted secondary image). The deflection is eased out
+  // far from the hole so the whole frame isn't bent.
+  vec2 d = gl_FragCoord.xy - uBH;
+  float th = max(length(d), 1e-3);
+  float falloff = 1.0 - smoothstep(5.0 * uThetaE, 10.0 * uThetaE, th);
+  float bend = (uThetaE * uThetaE) / (th * th) * falloff;
+  vec2 uv = (uBH + d * (1.0 - bend)) / uResolution;
+  // The secondary image is tiny and aliases without mipmaps: dim it.
+  float lensGain = mix(0.55, 1.0, smoothstep(0.85 * uThetaE, 1.1 * uThetaE, th));
+  lensGain *= smoothstep(uHorizon * 0.94, uHorizon * 1.04, th);  // the shadow
+  vec3 c = max(texture(uScene, uv).rgb, 0.0) * lensGain * uExposure * temperatureTint(uTemperature);
+#else
   vec3 c = max(texture(uScene, vUv).rgb, 0.0) * uExposure * temperatureTint(uTemperature);
+#endif
 
   // Tone-map luminance and keep hue, so a dense warm core stays yellow-orange
   // instead of clipping to white. Blend in a little per-channel ACES so the
