@@ -1,0 +1,33 @@
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code local (per-machine) settings
+.claude/settings.local.json
+
+# Logs and temp files
+*.log
+*.tmp
+.cache/
+
+# Environment / secrets
+.env
+.env.*
+
+# Dependencies or build output, if tooling is ever added
+node_modules/
+dist/
+build/
+
+# Local screenshots and recordings
+screenshots/
+*.mp4
+*.webm

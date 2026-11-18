@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NEBULA</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="nebula"></canvas>
+  <div id="hud" class="ui" hidden></div>
+  <div id="legend" class="glass ui" aria-label="Keyboard shortcuts">
+    <span><kbd>Space</kbd> <span id="legend-pause">pause</span></span>
+    <span><kbd>R</kbd> randomize</span>
+    <span><kbd>H</kbd> hide UI</span>
+    <span><kbd>F</kbd> fps</span>
+    <span class="legend-mouse">drag · orbit &nbsp; scroll · zoom</span>
+  </div>
+  <div id="error" hidden></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

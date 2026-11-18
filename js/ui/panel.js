@@ -1,0 +1,107 @@
+// Collapsible glass control panel. Ranges, steps and labels come from
+// js/config.js `params`; this file only decides which ones to show and how
+// to format them.
+
+import { params, config, sanitize } from '../config.js';
+
+/** Panel rows, in display order. `invert` flips the slider direction. */
+const CONTROLS = [
+  { key: 'starCount',   format: (v) => v.toLocaleString() },
+  { key: 'armCount',    format: (v) => String(v) },
+  { key: 'pitchDeg',    invert: true, format: (v, p) => `${Math.round(((p.max - v) / (p.max - p.min)) * 100)}%` },
+  { key: 'timeScale',   format: (v) => `${v.toFixed(1)}×` },
+  { key: 'bulgeRadius', format: (v) => v.toFixed(2) },
+  { key: 'colorTemp',   format: (v) => (Math.abs(v) < 0.005 ? 'neutral' : `${v > 0 ? 'warm' : 'cool'} ${Math.abs(v).toFixed(2)}`) },
+  { key: 'glow',        format: (v) => `${Math.round(v * 100)}%` },
+];
+
+const STORAGE_KEY = 'nebula.panelCollapsed';
+
+function el(tag, props = {}, children = []) {
+  const node = Object.assign(document.createElement(tag), props);
+  for (const c of children) node.append(c);
+  return node;
+}
+
+/**
+ * @param {object} opts
+ * @param {(key: string) => void} opts.onChange  called after config[key] changes
+ * @param {() => void} opts.onRandomize
+ */
+export function createPanel({ onChange, onRandomize }) {
+  const rows = [];
+
+  const body = el('div', { className: 'panel-body', id: 'panel-body' });
+
+  for (const ctl of CONTROLS) {
+    const p = params[ctl.key];
+    const id = `ctl-${ctl.key}`;
+    const input = el('input', { type: 'range', id, min: p.min, max: p.max, step: p.step });
+    const output = el('output', { className: 'row-value' });
+    output.setAttribute('for', id);
+    const label = el('label', { htmlFor: id, className: 'row-label', textContent: p.label });
+    const row = el('div', { className: 'row' }, [label, output, input]);
+
+    const toSlider = (v) => (ctl.invert ? p.min + p.max - v : v);
+    const fromSlider = (s) => (ctl.invert ? p.min + p.max - s : s);
+
+    const render = () => {
+      const v = config[ctl.key];
+      input.value = String(toSlider(v));
+      output.value = ctl.format(v, p);
+      const pct = ((Number(input.value) - p.min) / (p.max - p.min)) * 100;
+      input.style.setProperty('--pct', `${pct}%`);
+    };
+
+    input.addEventListener('input', () => {
+      config[ctl.key] = sanitize(ctl.key, fromSlider(Number(input.value)));
+      render();
+      onChange(ctl.key);
+    });
+
+    rows.push(render);
+    body.append(row);
+  }
+
+  const randomizeBtn = el('button', {
+    type: 'button',
+    className: 'btn-randomize',
+    title: 'Randomize (R)',
+    textContent: '✦ Randomize',
+  });
+  randomizeBtn.addEventListener('click', () => {
+    onRandomize();
+    randomizeBtn.blur(); // so Space doesn't re-trigger it
+  });
+  body.append(randomizeBtn);
+
+  const header = el('button', {
+    type: 'button',
+    className: 'panel-header',
+    title: 'Collapse / expand',
+  }, [el('span', { className: 'panel-title', textContent: 'NEBULA' }), el('span', { className: 'chevron' })]);
+  header.setAttribute('aria-controls', 'panel-body');
+
+  const panel = el('aside', { className: 'panel glass ui' }, [header, body]);
+  panel.setAttribute('aria-label', 'Galaxy controls');
+
+  const setCollapsed = (collapsed) => {
+    panel.classList.toggle('collapsed', collapsed);
+    header.setAttribute('aria-expanded', String(!collapsed));
+    try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch { /* storage unavailable */ }
+  };
+  header.addEventListener('click', () => {
+    setCollapsed(!panel.classList.contains('collapsed'));
+    header.blur();
+  });
+  let startCollapsed = false;
+  try { startCollapsed = localStorage.getItem(STORAGE_KEY) === '1'; } catch { /* ignore */ }
+  setCollapsed(startCollapsed);
+
+  document.body.append(panel);
+
+  const sync = () => rows.forEach((render) => render());
+  sync();
+
+  return { sync, element: panel };
+}
