@@ -66,7 +66,7 @@ export const params = {
   companionMass: { value: 0.35,  min: 0.05, max: 1,      step: 0.01,  kind: 'regen',   label: 'Companion mass' },   // mass ratio q
   encounterTilt: { value: 30,    min: 0,    max: 180,    step: 1,     kind: 'regen',   label: 'Encounter tilt', random: [10, 60] }, // >90° = retrograde
   pericenter:    { value: 1.0,   min: 0.5,  max: 3,      step: 0.05,  kind: 'regen',   label: 'Closest approach' }, // × galaxyRadius
-  collisionRate: { value: 1.5,   min: 0,    max: 3,      step: 0.05,  kind: 'uniform', label: 'Collision speed' },
+  collisionRate: { value: 1.0,   min: 0,    max: 3,      step: 0.05,  kind: 'uniform', label: 'Collision speed' },
 };
 
 /** Live config values: `config.starCount`, etc. */

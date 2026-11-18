@@ -154,9 +154,10 @@ function start() {
     realTime += dt;
     if (!paused) simTime += dt * config.timeScale;
 
-    // Collision physics: CPU N-body, positions streamed to the GPU.
+    // Collision physics: CPU N-body, positions streamed to the GPU. Its clock
+    // is the Collision speed alone, independent of the Rotation speed slider.
     if (sim && !paused) {
-      sim.step(dt * config.timeScale * config.collisionRate, config);
+      sim.step(dt * config.collisionRate, config);
       stars.setPositions(sim.positions('stars'));
       haze.setPositions(sim.positions('haze'));
       dust.setPositions(sim.positions('dust'));
