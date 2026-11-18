@@ -4,9 +4,13 @@
 
 import { params, config, sanitize } from '../config.js';
 
-/** Panel rows, in display order. `invert` flips the slider direction. */
+/**
+ * Panel rows, in display order.
+ *   invert           flips the slider direction
+ *   commitOnRelease  only apply when the slider is released (for expensive rebuilds)
+ */
 const CONTROLS = [
-  { key: 'starCount',   format: (v) => v.toLocaleString() },
+  { key: 'starCount',   commitOnRelease: true, format: (v) => v.toLocaleString() },
   { key: 'armCount',    format: (v) => String(v) },
   { key: 'pitchDeg',    invert: true, format: (v, p) => `${Math.round(((p.max - v) / (p.max - p.min)) * 100)}%` },
   { key: 'timeScale',   format: (v) => `${v.toFixed(1)}×` },
@@ -53,11 +57,21 @@ export function createPanel({ onChange, onRandomize }) {
       input.style.setProperty('--pct', `${pct}%`);
     };
 
-    input.addEventListener('input', () => {
+    const apply = () => {
       config[ctl.key] = sanitize(ctl.key, fromSlider(Number(input.value)));
       render();
       onChange(ctl.key);
-    });
+    };
+    if (ctl.commitOnRelease) {
+      // Preview the number while dragging; rebuild once on release.
+      input.addEventListener('input', () => {
+        output.value = ctl.format(sanitize(ctl.key, fromSlider(Number(input.value))), p);
+        input.style.setProperty('--pct', `${((Number(input.value) - p.min) / (p.max - p.min)) * 100}%`);
+      });
+      input.addEventListener('change', apply);
+    } else {
+      input.addEventListener('input', apply);
+    }
 
     rows.push(render);
     body.append(row);
