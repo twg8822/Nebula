@@ -30,7 +30,7 @@ Notes for Claude Code about this project. Claude reads this file at the start of
 - `js/camera/camera.js`: orbit camera. The disk lies in the XZ plane, with Y up.
 
 ## Conventions
-- Default git branch for PRs is `main` (the local repo currently starts on `master`).
+- Default git branch is `main`.
 - Keep commits small and focused, with clear messages.
 - Only commit or push when asked.
 
