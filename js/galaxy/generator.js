@@ -1,4 +1,5 @@
 import { createRng } from '../math/random.js';
+import { spiralArm } from '../../src/math.js';
 
 // Per-particle layout (9 floats):
 //   r, theta0, height, worldSize, red, green, blue, brightness, lock
@@ -71,10 +72,9 @@ export function generateGalaxy(cfg) {
   const dust = new ParticleBuffer(Math.ceil(n * cfg.dustFraction));
 
   // Arms trail the rotation: θ decreases with r.
-  const invTanPitch = 1 / Math.tan((cfg.pitchDeg * Math.PI) / 180);
   const arms = Math.max(1, Math.round(cfg.armCount));
   const armPhase = rng.next() * TAU;
-  const armTheta = (r, arm) => armPhase + (arm * TAU) / arms - Math.log(r) * invTanPitch;
+  const armTheta = spiralArm(cfg.armCount, cfg.pitchDeg, armPhase);
   // Angular half-width (σ) of an arm at radius r.
   const armSigma = (r) => cfg.armSpread * (0.6 + 0.6 * (r / R));
   const pickArm = () => Math.floor(rng.next() * arms);

@@ -15,6 +15,7 @@
 
 import { generateGalaxy } from './generator.js';
 import { angularVelocity } from './rotation.js';
+import { orbitAngle, diskPosition } from '../../src/math.js';
 import { createRng } from '../math/random.js';
 
 const DEG = Math.PI / 180;
@@ -142,12 +143,11 @@ export class CollisionSim {
         }
         // Host keeps its current analytic angle so the switch is seamless.
         const th = isHost
-          ? data[e + 1] + (angularVelocity(r, v0, rc) + (patternSpeed - angularVelocity(r, v0, rc))
-            * Math.min(1, lock * cfg.armLock)) * t0
+          ? orbitAngle(data[e + 1], angularVelocity(r, v0, rc), patternSpeed, Math.min(1, lock * cfg.armLock), t0)
           : data[e + 1];
         const o = (base + i) * 3;
         const p = this.pos, v = this.vel;
-        p[o] = r * Math.cos(th); p[o + 1] = h; p[o + 2] = r * Math.sin(th);
+        p.set(diskPosition(r, th, h), o);
         const s = Math.hypot(r, h);
 
         // Circular-orbit velocity. Thin-disk particles orbit in the plane

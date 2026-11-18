@@ -1,6 +1,10 @@
 import { createProgram } from '../gl/program.js';
 import { COMPOSITE_VS, COMPOSITE_FS, CORE_VS, CORE_FS } from '../shaders/composite.js';
 import { transform } from '../math/mat4.js';
+import { colorFilter } from '../../src/math.js';
+
+// The color filter math lives in src/math.js; re-exported for main.js.
+export { colorFilter };
 
 /**
  * Project a world point to pixel coordinates. Returns null when it is behind
@@ -14,25 +18,6 @@ export function projectToScreen(viewProj, p, width, height) {
 
 const ORIGIN = [0, 0, 0];
 const NO_TINT = [1, 1, 1];
-const LUMA = [0.2126, 0.7152, 0.0722];
-const FILTER_SATURATION = 0.8;  // full strength never zeroes a channel outright
-
-/**
- * Color filter multiplier for the tone-map pass. The filter color is a hue at
- * 80% saturation, scaled so its luminance is 1 (overall brightness stays
- * about the same), then blended in by strength. Strength 0 gives exactly
- * [1, 1, 1], so the image is unchanged.
- */
-export function colorFilter(hueDeg, strength) {
-  if (!(strength > 0)) return NO_TINT;
-  const h = (((hueDeg % 360) + 360) % 360) / 60;
-  const rgb = [0, 4, 2].map((o) => {
-    const k = Math.min(Math.max(Math.abs(((h + o) % 6) - 3) - 1, 0), 1); // pure hue
-    return 1 - FILTER_SATURATION + FILTER_SATURATION * k;
-  });
-  const lum = rgb[0] * LUMA[0] + rgb[1] * LUMA[1] + rgb[2] * LUMA[2];
-  return rgb.map((c) => 1 + (c / lum - 1) * strength);
-}
 const WARM_INNER = [1.0, 0.8, 0.52];
 const WARM_OUTER = [1.0, 0.6, 0.32];
 

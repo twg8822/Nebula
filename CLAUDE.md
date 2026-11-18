@@ -15,7 +15,7 @@ Notes for Claude Code about this project. Claude reads this file at the start of
 - In the browser console: `nebula.config.<key> = …; nebula.regenerate()`
 - Keys: `Space` pauses, `R` randomizes, `H` hides or shows all UI, `F` toggles the FPS HUD, `C` toggles the cinematic camera. Mouse: drag to orbit (with inertia), wheel to zoom, double-click to glide back to the default view.
 - Console: `nebula.sim` is the live `CollisionSim` while collision mode is on (e.g. `for (let i=0;i<600;i++) nebula.sim.step(0.05, nebula.config)` to skip ahead). `nebula.flares.trigger(phi)` fires a flare; with Space-paused, set `nebula.flares.age` to freeze one for a screenshot.
-- Test / lint: none. For a syntax check, Node (v18) treats `js/*.js` as CommonJS because there's no package.json, so copy `js/` to a temp dir next to `{"type":"module"}` and run `node --check` there. Physics can be tested headless the same way by importing `CollisionSim`. Don't add a package.json to the repo.
+- Test: `node --test tests/` (or `npm test` where npm exists; it isn't installed on this machine). The tests use Node's built-in runner and have zero dependencies. `package.json` exists only to set `"type": "module"` so Node can load the ES modules; keep it dependency-free. With it, `node --check js/...` and headless imports (e.g. of `CollisionSim`) work directly in the repo. No lint.
 
 ## Project structure
 - `README.md`: the public description on GitHub (features, controls, how it works, roadmap). Update its Features and Roadmap sections when a phase ships.
@@ -29,6 +29,8 @@ Notes for Claude Code about this project. Claude reads this file at the start of
 - `.claude/skills/preset/`: the `/preset <description>` skill (SKILL.md, with a vibe→knob guide and a JSON schema generated from config.js) and `validate.py`, which checks presets against the live `config.js`.
 - **When you add, remove or re-range a param in `config.js`**: update `presets/default.json` if the default changed, then run the validator. Missing keys fail validation (the app itself falls back to defaults for them). Regenerate the schema in `SKILL.md` too.
 - Anything with class `.ui` is hidden by `H` (via `body.ui-hidden`).
+- `src/math.js`: all pure math (seeded RNG, rotation curve, `orbitAngle`, `spiralArm`, `diskPosition`, `temperatureTint`, `colorFilter`). The app uses it through `js/math/random.js` and `js/galaxy/rotation.js` (re-exports), `generator.js`, `collision.js` and `compositor.js`. The GLSL can't import it, so `temperatureTint` and the star orbit formula exist twice; `tests/math.test.js` checks that the shader constants still match. **Refactors here must not change output**: the 2026-11-18 extraction was verified with byte-identical fingerprints of every preset's buffers, the background, and collision sims.
+- `tests/math.test.js`: unit tests for `src/math.js` (golden RNG values, rotation curve, log-spiral pitch, luminance-preserving tints, filter neutral at 0, shader sync).
 - `js/galaxy/generator.js`: builds per-particle orbital elements (r, θ0, height, size, rgb, brightness, lock) for stars (arm, bulge, field and halo populations), haze and dust.
 - `js/galaxy/rotation.js`: rotation curve Ω(r) = v0/√(r²+rc²). **It must match** `js/shaders/stars.js`.
 - `js/galaxy/collision.js`: `CollisionSim`. Restricted N-body for collision mode (see Notes).

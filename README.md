@@ -70,6 +70,14 @@ With [Claude Code](https://claude.com/claude-code), type `/preset <description>`
 python3 .claude/skills/preset/validate.py --all
 ```
 
+## Tests
+
+The pure math (seeded random numbers, rotation curve, spiral arms, color temperature and the color filter) lives in [`src/math.js`](src/math.js) and has unit tests that use Node's built-in test runner. No dependencies, nothing to install:
+
+```bash
+node --test tests/
+```
+
 ## How it works
 
 - **Generation** (`js/galaxy/generator.js`): each star gets orbital elements (radius, starting angle, height, size, color, brightness) for its population: arm, bulge, field or halo.
@@ -93,6 +101,8 @@ js/gl/              WebGL2 context, shader programs, HDR framebuffer
 js/camera/          orbit camera with the cinematic auto-orbit
 js/ui/panel.js      control panel
 js/ui/presets.js    loads presets/ for the Preset dropdown
+src/math.js         pure math (random, rotation curve, spiral arms, color)
+tests/              unit tests (node --test)
 presets/            saved galaxy presets (JSON) and index.json
 ```
 
