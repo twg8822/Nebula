@@ -21,7 +21,7 @@ const BREATH = 0.06;       // ± fraction of distance during auto-orbit
  * view never jumps when auto-orbit starts or stops.
  */
 export class OrbitCamera {
-  constructor(canvas, { distance = 26, yaw = 0, pitch = 60 * DEG, fov = 50 * DEG } = {}) {
+  constructor(canvas, { distance = 26, yaw = 0, pitch = 25 * DEG, fov = 50 * DEG } = {}) {
     this.defaults = { distance, yaw, pitch };
     this.goal = { distance, yaw, pitch };
     // Smoothed values (before cinematic offsets) and final shown values.

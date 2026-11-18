@@ -51,7 +51,7 @@ export const params = {
   // Cinematic camera: slow auto-orbit with a swaying tilt after a few idle seconds.
   autoOrbit:     { value: 1,     min: 0,    max: 1,      step: 1,     kind: 'uniform', label: 'Cinematic camera' },
   orbitSpeed:    { value: 0.05,  min: 0,    max: 0.3,    step: 0.01,  kind: 'uniform', label: 'Orbit speed' },      // rad/s
-  tiltDeg:       { value: 6,     min: 0,    max: 30,     step: 1,     kind: 'uniform', label: 'Camera tilt' },      // ± degrees
+  tiltDeg:       { value: 12,    min: 0,    max: 30,     step: 1,     kind: 'uniform', label: 'Camera tilt' },      // ± degrees
 
   // Supermassive black hole: horizon, accretion disk, screen-space lensing.
   blackHole:     { value: 0,     min: 0,    max: 1,      step: 1,     kind: 'uniform', label: 'Black hole' },
