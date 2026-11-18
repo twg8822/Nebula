@@ -8,7 +8,7 @@ import { StarLayer } from './render/starLayer.js';
 import { HAZE_FS, DUST_FS } from './shaders/stars.js';
 import { BackgroundLayer, generateBackground } from './render/backgroundLayer.js';
 import { CoreGlow, Compositor, projectToScreen } from './render/compositor.js';
-import { AccretionDisk, BH_HORIZON } from './render/blackHole.js';
+import { AccretionDisk, FlareTimer, BH_HORIZON } from './render/blackHole.js';
 import { CollisionSim } from './galaxy/collision.js';
 import { OrbitCamera } from './camera/camera.js';
 
@@ -39,6 +39,7 @@ function start() {
   const core = new CoreGlow(gl);
   const compositor = new Compositor(gl);
   const accretion = new AccretionDisk(gl);
+  const flares = new FlareTimer();
   const camera = new OrbitCamera(canvas);
 
   let dpr = 1;
@@ -156,6 +157,13 @@ function start() {
     }
     const hostCenter = sim ? sim.H : ORIGIN;
 
+    // Tidal disruptions: occasional random flares on the accretion disk.
+    if (config.blackHole && config.bhFlares) {
+      if (!paused) flares.update(dt);
+    } else {
+      flares.stop();
+    }
+
     resize();
     const width = canvas.width;
     const height = canvas.height;
@@ -228,6 +236,8 @@ function start() {
         brightness: config.bhDiskBrightness,
         doppler: config.bhDoppler,
         time: simTime,
+        flareAge: flares.age,
+        flarePhi: flares.phi,
       });
     }
     dust.draw({ ...orbit, sizeScale: 1, intensity: config.dustOpacity });
@@ -275,7 +285,7 @@ function start() {
   // Console hooks for params not on the panel:
   //   nebula.config.dustOpacity = 1.5            (uniform: live)
   //   nebula.config.knotRate = 0.01; nebula.regenerate()   (regen)
-  window.nebula = { config, regenerate, randomize: randomizeGalaxy, camera, get sim() { return sim; } };
+  window.nebula = { config, regenerate, randomize: randomizeGalaxy, camera, flares, get sim() { return sim; } };
 }
 
 try {

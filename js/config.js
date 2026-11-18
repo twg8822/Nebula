@@ -58,6 +58,7 @@ export const params = {
   bhMass:        { value: 0.6,   min: 0.1,  max: 2,      step: 0.01,  kind: 'uniform', label: 'Black hole size' }, // Einstein radius, world units
   bhDiskBrightness: { value: 2.0, min: 0,   max: 8,      step: 0.05,  kind: 'uniform', label: 'Accretion glow' },
   bhDoppler:     { value: 0.4,   min: 0,    max: 0.9,    step: 0.01,  kind: 'uniform', label: 'Doppler beaming' },  // β
+  bhFlares:      { value: 0,     min: 0,    max: 1,      step: 1,     kind: 'uniform', label: 'Tidal disruptions' },  // stars shredded into flares
 
   // Galaxy collision: CPU N-body with a companion falling in.
   collision:     { value: 0,     min: 0,    max: 1,      step: 1,     kind: 'regen',   label: 'Collision' },

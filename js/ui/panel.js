@@ -26,6 +26,7 @@ const CONTROLS = [
   { key: 'blackHole',   toggle: true },
   { key: 'bhMass',      showIf: 'blackHole', format: (v) => v.toFixed(2) },
   { key: 'bhDiskBrightness', showIf: 'blackHole', format: (v) => v.toFixed(2) },
+  { key: 'bhFlares',    toggle: true, showIf: 'blackHole' },
   { key: 'collision',   toggle: true },
   { key: 'companionMass', showIf: 'collision', commitOnRelease: true, format: (v) => `${Math.round(v * 100)}%` },
   { key: 'encounterTilt', showIf: 'collision', commitOnRelease: true, format: (v) => `${v}°${v > 90 ? ' retro' : ''}` },
@@ -63,7 +64,10 @@ export function createPanel({ onChange, onRandomize }) {
       input.setAttribute('role', 'switch');
       const label = el('label', { htmlFor: id, className: 'row-label', textContent: params[ctl.key].label });
       const row = el('div', { className: 'row row-toggle' }, [label, input]);
-      rows.push(() => { input.checked = !!config[ctl.key]; });
+      rows.push(() => {
+        if (ctl.showIf) row.hidden = !config[ctl.showIf];
+        input.checked = !!config[ctl.key];
+      });
       input.addEventListener('change', () => {
         config[ctl.key] = input.checked ? 1 : 0;
         sync(); // shows/hides dependent rows

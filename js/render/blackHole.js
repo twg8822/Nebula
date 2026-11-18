@@ -8,6 +8,47 @@ export const BH_HORIZON = 0.5;
 export const BH_DISK_IN = 1.2;
 export const BH_DISK_OUT = 3.5;
 
+/** Tidal disruption flare length in seconds (matches FLARE_LEN in the shader). */
+export const FLARE_LEN = 3.5;
+const FLARE_COOLDOWN = 4;
+
+/**
+ * Schedules tidal disruption flares: randomly every 10–25 s, or on demand
+ * when the collision sim reports a star falling in. Runs on unpaused real
+ * time so flares look the same at any rotation speed.
+ */
+export class FlareTimer {
+  constructor(rand = Math.random) {
+    this.rand = rand;
+    this.age = -1;       // seconds into the current flare; -1 = none
+    this.phi = 0;
+    this.sinceLast = Infinity;
+    this.next = 5 + rand() * 8;
+  }
+
+  trigger(phi) {
+    if (this.sinceLast < FLARE_COOLDOWN) return;
+    this.age = 0;
+    this.sinceLast = 0;
+    this.phi = phi;
+    this.next = 10 + this.rand() * 15;
+  }
+
+  update(dt) {
+    this.sinceLast += dt;
+    if (this.age >= 0) {
+      this.age += dt;
+      if (this.age > FLARE_LEN) this.age = -1;
+    }
+    this.next -= dt;
+    if (this.next <= 0) this.trigger(this.rand() * Math.PI * 2);
+  }
+
+  stop() {
+    this.age = -1;
+  }
+}
+
 /** Glowing accretion disk around the black hole (additive, into HDR). */
 export class AccretionDisk {
   constructor(gl) {
@@ -29,7 +70,7 @@ export class AccretionDisk {
     gl.bindVertexArray(null);
   }
 
-  draw({ viewProj, center, eye, mass, brightness, doppler, time }) {
+  draw({ viewProj, center, eye, mass, brightness, doppler, time, flareAge = -1, flarePhi = 0 }) {
     if (brightness <= 0) return;
     const { gl, prog } = this;
     gl.blendFunc(gl.ONE, gl.ONE);
@@ -42,6 +83,8 @@ export class AccretionDisk {
     gl.uniform1f(prog.loc('uTime'), time);
     gl.uniform1f(prog.loc('uBrightness'), brightness);
     gl.uniform1f(prog.loc('uDoppler'), doppler);
+    gl.uniform1f(prog.loc('uFlareAge'), flareAge);
+    gl.uniform1f(prog.loc('uFlarePhi'), flarePhi);
     gl.bindVertexArray(this.vao);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.count);
     gl.bindVertexArray(null);
