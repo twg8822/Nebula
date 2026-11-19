@@ -1,5 +1,5 @@
 // Unit tests for src/math.js. Zero dependencies: Node's built-in runner.
-//   npm test            (or)   node --test tests/
+//   npm test            (or)   node --test tests/*.test.js
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';

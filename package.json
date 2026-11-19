@@ -4,6 +4,6 @@
   "description": "Generative galaxy simulator. No dependencies and no build step; this file only lets Node run the ES modules for tests.",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/"
+    "test": "node --test tests/*.test.js"
   }
 }

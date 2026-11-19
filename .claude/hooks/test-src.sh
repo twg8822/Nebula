@@ -17,7 +17,7 @@ case "$file" in
 esac
 
 cd "$root" || exit 0
-if out=$(node --test tests/ 2>&1); then
+if out=$(node --test tests/*.test.js 2>&1); then
   exit 0
 fi
 
@@ -30,7 +30,7 @@ summary=$(printf '%s\n' "$out" \
 
 jq -n --arg rel "$rel" --arg n "${failed:-?}" --arg s "$summary" '{
   decision: "block",
-  reason: ("node --test tests/ FAILED after editing " + $rel + " (" + $n + " failing). Fix it before doing anything else:\n" + $s),
+  reason: ("node --test tests/*.test.js FAILED after editing " + $rel + " (" + $n + " failing). Fix it before doing anything else:\n" + $s),
   systemMessage: ("Unit tests: " + $n + " failing after editing " + $rel)
 }'
 exit 0
