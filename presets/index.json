@@ -4,7 +4,10 @@
   {"file": "devourers-waltz.json", "name": "Devourer's Waltz"},
   "dying-ancient-giant.json",
   "dying-red-giant.json",
+  "frozen-ice.json",
   "glacier-lace.json",
+  "golden-ancient-elliptical.json",
   "lavender-whirlpool.json",
-  "neon-whirlpool.json"
+  "neon-whirlpool.json",
+  "violet-storm.json"
 ]

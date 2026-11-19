@@ -37,6 +37,8 @@ How the knobs read on screen:
 | Dusty / moody / dark | `dustFraction` 0.2–0.35, `dustOpacity` 1.3–2, `exposure` 0.9–1.1 |
 | Star-forming / pink knots | `knotRate` 0.008–0.02, `youngFraction` up |
 | Sparse / lonely | `starCount` 40k–70k, `bgStarCount` 1000–2500, `haloFraction` low |
+| Elliptical / round / old star swarm | No disk and no gas: `bulgeFraction` 0.6, `haloFraction` 0.3, `fieldFraction` 0.1 (leaves no arm stars), `bulgeRadius` 3.5, `diskThickness` 1, `hazeBrightness` 0, `dustFraction` 0, `youngFraction` 0, `knotRate` 0, `coreGlow` ≈0.35, `galaxyRadius` ≈7 so the camera frames it closer. Don't max out `armCount`/`armSpread`/`pitchDeg` to fake roundness; that scatters gas puffs around a flat disc. See `presets/golden-ancient-elliptical.json` |
+| Violent / storm / chaotic (without collision) | Ragged loose arms (`pitchDeg` 30–35, `armSpread` 0.7+), heavy torn dust (`dustFraction` 0.3+, `dustOpacity` 2–2.5), sparks (`knotRate` 0.02–0.03), small dim core (`bulgeFraction` ≤0.05, `coreGlow` ≤0.1), fast spin (`timeScale` 5–6), restless camera (`orbitSpeed` 0.12+, `tiltDeg` 20–25), `twinkle` 1, and a black hole with flares. Keep `bhMass` ≤ ~0.8 or its disk becomes a big pale plate. See `presets/violet-storm.json` |
 | Black hole, void, monster | `blackHole` 1; `bhMass` 0.8–1.5 to make it big; `bhFlares` 1 if "violent" or "feeding" |
 | Collision, chaos, merger | `collision` 1; `companionMass` 0.3–0.6; `encounterTilt` < 90 for long tails, > 90 retrograde (weaker tails); `bhGravity` 1 only together with `blackHole` 1 and `collision` 1 |
 | Cinematic / showcase | `autoOrbit` 1; `tiltDeg` 8–20 |
