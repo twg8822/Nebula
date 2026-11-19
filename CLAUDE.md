@@ -42,7 +42,7 @@ Notes for Claude Code about this project. Claude reads this file at the start of
 - `js/camera/camera.js`: orbit camera. The disk lies in the XZ plane, with Y up. Input writes `camera.goal`; shown values ease toward it with dt. Cinematic offsets (tilt sway, zoom breathing) are scaled by a 0..1 blend and get baked into the goal when the user takes over, so nothing jumps. `camera.targetGoal` is where it looks (the collision focus, else the origin). It runs on real time, so it keeps moving while paused. Framing (`fitCamera` / `panelShift` in `main.js`): distance = 2.6 × `galaxyRadius` (26 at the default 10), or at least 4.8 × in collision mode, refitted only when the radius or mode changes so a manual zoom survives; `camera.shift` is an off-axis projection shift (NDC, eased) that centres the galaxy in the space left of the open panel, 0 when the panel is collapsed, hidden (`H`) or covers over half the window.
 
 ## Conventions
-- Default git branch is `main`. The remote is `origin` → https://github.com/Trent5174/nebula (HTTPS through `gh`).
+- Default git branch is `main`. Since 2026-11-19 the remote is `origin` → https://github.com/twg8822/Nebula (HTTPS through `gh`, account `twg8822`; commits are authored as `twg8822` with the GitHub no-reply email, set in this repo's local git config). The old repo is kept as remote `trent5174` (https://github.com/Trent5174/nebula) and no longer pushed to.
 - Keep commits small and focused, with clear messages.
 - Only commit or push when asked.
 
