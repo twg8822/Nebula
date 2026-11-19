@@ -61,8 +61,9 @@ function el(tag, props = {}, children = []) {
  * @param {(key: string) => void} opts.onChange  called after config[key] changes
  * @param {() => void} opts.onRandomize
  * @param {(preset: {name: string, values: object}) => void} [opts.onPreset]  a preset was picked
+ * @param {() => void} [opts.onWallpaper]  the Wallpaper button was clicked
  */
-export function createPanel({ onChange, onRandomize, onPreset = () => {} }) {
+export function createPanel({ onChange, onRandomize, onPreset = () => {}, onWallpaper = () => {} }) {
   const rows = [];
 
   const body = el('div', { className: 'panel-body', id: 'panel-body' });
@@ -166,7 +167,17 @@ export function createPanel({ onChange, onRandomize, onPreset = () => {} }) {
     markCustom();
     randomizeBtn.blur(); // so Space doesn't re-trigger it
   });
-  body.append(randomizeBtn);
+  const wallpaperBtn = el('button', {
+    type: 'button',
+    className: 'btn-wallpaper',
+    title: 'Record a looping video of this galaxy for Wallpaper Engine',
+    textContent: '▣ Wallpaper',
+  });
+  wallpaperBtn.addEventListener('click', () => {
+    onWallpaper();
+    wallpaperBtn.blur();
+  });
+  body.append(randomizeBtn, wallpaperBtn);
 
   const header = el('button', {
     type: 'button',
@@ -209,5 +220,8 @@ export function createPanel({ onChange, onRandomize, onPreset = () => {} }) {
     presetSelect.value = match >= 0 ? String(match) : '';
   };
 
-  return { sync, setPresets, markCustom, element: panel };
+  /** Name of the selected preset, or "Custom". */
+  const presetName = () => presetSelect.selectedOptions[0]?.textContent || 'Custom';
+
+  return { sync, setPresets, markCustom, presetName, element: panel };
 }

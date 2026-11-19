@@ -80,6 +80,38 @@ export function diskPosition(r, theta, height) {
   return [r * Math.cos(theta), height, r * Math.sin(theta)];
 }
 
+// ------------------------------------------------------------- looping clips
+// A wallpaper clip should loop without a visible jump. The arms are evenly
+// spaced, so the arm pattern looks the same after turning 1/armCount of a
+// revolution: nudge the galaxy's speed so the pattern turns a whole number
+// of arm spacings during the clip, then cross-fade the last moments into the
+// start to hide the individual stars that don't line up.
+
+/**
+ * Speed multiplier for a seamless loop. patternRate is the arm pattern's
+ * angular speed in radians per clip second; after scaling, the pattern turns
+ * exactly k · 2π/arms in `seconds` (k ≥ 1, the nearest whole number of arm
+ * spacings). Returns 1 when the galaxy doesn't rotate.
+ */
+export function loopSpeedScale(patternRate, seconds, armCount) {
+  const turn = patternRate * seconds;
+  if (!(turn > 0) || !(seconds > 0)) return 1;
+  const spacing = TAU / Math.max(1, Math.round(armCount));
+  const k = Math.max(1, Math.round(turn / spacing));
+  return (k * spacing) / turn;
+}
+
+/**
+ * Cross-fade weight toward the clip's start: 0 until `fade` seconds before
+ * the end, then easing to 1 at t = seconds (so the last frame flows into the
+ * first).
+ */
+export function loopFade(t, seconds, fade) {
+  if (!(fade > 0)) return 0;
+  const x = Math.min(1, Math.max(0, (t - (seconds - fade)) / fade));
+  return x * x * (3 - 2 * x);
+}
+
 // ---------------------------------------------------------------------- color
 
 /** Rec. 709 luminance weights. */

@@ -1,12 +1,6 @@
 import { createProgram } from '../gl/program.js';
 import { COMPOSITE_VS, COMPOSITE_FS, CORE_VS, CORE_FS } from '../shaders/composite.js';
 import { transform } from '../math/mat4.js';
-import { colorFilter } from '../../src/math.js';
-
-// The color filter math lives in src/math.js; re-exported for main.js. The
-// filter is applied per galaxy layer (stars, haze, core glow, accretion disk),
-// not in the tone-map pass, so the background sky keeps its natural color.
-export { colorFilter };
 
 /**
  * Project a world point to pixel coordinates. Returns null when it is behind
@@ -65,13 +59,20 @@ export class Compositor {
 
   /**
    * lens: { x, y, thetaE, horizon } in pixels plus ring [r, g, b], or null.
+   * alpha < 1 blends the result over what's already on screen (a cross-fade).
    */
-  draw(texture, { exposure, temperature = 0, width, height, lens = null }) {
+  draw(texture, { exposure, temperature = 0, width, height, lens = null, alpha = 1 }) {
     const { gl } = this;
     const prog = lens ? this.lensProg : this.prog;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, width, height);
-    gl.disable(gl.BLEND);
+    if (alpha < 1) {
+      gl.enable(gl.BLEND);
+      gl.blendColor(0, 0, 0, alpha);
+      gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
+    } else {
+      gl.disable(gl.BLEND);
+    }
     prog.use();
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);

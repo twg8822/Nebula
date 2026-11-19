@@ -170,7 +170,23 @@ export class OrbitCamera {
     this.yaw = s.yaw;
     this.pitch = clamp(s.pitch + this._tilt, -PITCH_LIMIT, PITCH_LIMIT);
     this.distance = s.distance * (1 + this._breath);
+    this._compose(aspect, this.shift);
+  }
 
+  /**
+   * Set the matrices for an exact pose, with no easing, input or panel
+   * shift (used to record wallpaper clips frame by frame). The next update()
+   * restores the live view.
+   */
+  renderPose(aspect, { yaw, pitch, distance }) {
+    this.yaw = yaw;
+    this.pitch = clamp(pitch, -PITCH_LIMIT, PITCH_LIMIT);
+    this.distance = distance;
+    this._compose(aspect, 0);
+  }
+
+  /** Eye, view and projection matrices from yaw/pitch/distance around the target. */
+  _compose(aspect, shift) {
     const cp = Math.cos(this.pitch);
     const eye = this.eye;
     eye[0] = this.target[0] + this.distance * cp * Math.sin(this.yaw);
@@ -179,7 +195,7 @@ export class OrbitCamera {
     mat4.lookAt(this.view, eye, this.target, [0, 1, 0]);
     mat4.perspective(this.proj, this.fov, aspect, this.near, this.far);
     // Off-axis shift: clip.x += shift * clip.w, and clip.w = -z_view.
-    this.proj[8] -= this.shift;
+    this.proj[8] -= shift;
     mat4.multiply(this.viewProj, this.proj, this.view);
 
     this._viewRot.set(this.view);

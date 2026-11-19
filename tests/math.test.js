@@ -9,6 +9,7 @@ import {
   angularVelocity, circularSpeed, orbitAngle,
   spiralArm, diskPosition,
   LUMA, WARM_TINT, COOL_TINT, temperatureTint, colorFilter,
+  loopSpeedScale, loopFade,
 } from '../src/math.js';
 
 const close = (actual, expected, eps = 1e-9, msg = '') =>
@@ -234,6 +235,38 @@ describe('color filter', () => {
     for (let hue = 0; hue < 360; hue += 5) {
       for (const c of colorFilter(hue, 1)) assert.ok(c > 0, `hue ${hue}`);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe('seamless wallpaper loops', () => {
+  test('the arm pattern turns a whole number of arm spacings per clip', () => {
+    for (const [rate, seconds, arms] of [[0.05, 30, 4], [0.013, 20, 2], [0.2, 60, 6], [0.004, 30, 3]]) {
+      const turn = rate * loopSpeedScale(rate, seconds, arms) * seconds;
+      const spacings = turn / (TAU / arms);
+      close(spacings, Math.round(spacings), 1e-9, `rate ${rate}`);
+      assert.ok(spacings >= 1 - 1e-9, 'at least one spacing, so the galaxy never freezes');
+    }
+  });
+
+  test('picks the nearest spacing, so the speed changes as little as possible', () => {
+    // 4 arms: spacing π/2. A turn of 1.5 rad is closest to 1 spacing (scale ≈ 1.047).
+    close(loopSpeedScale(1.5 / 30, 30, 4), (Math.PI / 2) / 1.5);
+    // A turn of 3.3 rad is closest to 2 spacings (π).
+    close(loopSpeedScale(3.3 / 30, 30, 4), Math.PI / 3.3);
+  });
+
+  test('a still galaxy (or a zero-length clip) keeps its speed', () => {
+    assert.equal(loopSpeedScale(0, 30, 4), 1);
+    assert.equal(loopSpeedScale(0.1, 0, 4), 1);
+  });
+
+  test('cross-fade: 0 before the window, eases to exactly 1 at the end', () => {
+    assert.equal(loopFade(0, 30, 3), 0);
+    assert.equal(loopFade(26.9, 30, 3), 0);
+    close(loopFade(28.5, 30, 3), 0.5);
+    assert.equal(loopFade(30, 30, 3), 1);
+    assert.equal(loopFade(15, 30, 0), 0);
   });
 });
 
