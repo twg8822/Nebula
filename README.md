@@ -63,6 +63,17 @@ nebula.flares.trigger(0);   // fire a tidal disruption flare now (black hole + f
 
 ## Presets
 
+<table>
+  <tr>
+    <td><img src="docs/neon-whirlpool.gif" alt="Neon Whirlpool preset: violet-pink spiral arms around a black hole with a glowing accretion disk" width="400"></td>
+    <td><img src="docs/glacier-lace.gif" alt="Glacier Lace preset: three open, icy blue spiral arms" width="400"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Neon Whirlpool</b></td>
+    <td align="center"><b>Glacier Lace</b></td>
+  </tr>
+</table>
+
 Presets live in [`presets/`](presets) as JSON files that use exactly the same keys as `js/config.js`. The dropdown loads everything listed in `presets/index.json` (or, when that's missing, everything in the folder listing that `python3 -m http.server` shows). The file name becomes the display name, so `neon-whirlpool.json` shows as "Neon Whirlpool". When a name needs characters a file name can't hold, list it in the index as `{"file": "devourers-waltz.json", "name": "Devourer's Waltz"}`.
 
 With [Claude Code](https://claude.com/claude-code), type `/preset <description>` (for example `/preset a calm, icy spiral with a hungry black hole`). The project skill in `.claude/skills/preset/` designs the preset, saves it, adds it to the index and validates it. To check presets by hand:
