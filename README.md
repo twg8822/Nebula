@@ -18,6 +18,7 @@ A generative galaxy simulator that runs in the browser. It draws tens of thousan
 - **Cinematic camera.** After a few idle seconds the camera slowly orbits, with a swaying tilt and gentle zoom. Dragging takes over smoothly and spins with inertia.
 - **Control panel.** Live sliders for star count, arms, tightness, rotation speed, core size, color temperature, a color filter (off by default; slide it up to tint the galaxy any hue while the sky behind it keeps its natural color) and glow, plus switches for the cinematic camera, black hole and collision mode. Each switch reveals its own settings when you turn it on. One click on **Randomize** gives you a new galaxy, and it never flips the switches.
 - **Presets.** The **Preset** dropdown at the top of the panel loads a saved look. Every preset sets every setting, and **Default** returns to the starting galaxy. The dropdown shows a preset's name whenever the current settings match it, including Default on first load.
+- **Live wallpapers.** The **Wallpaper** button records a seamlessly looping video (up to 4K) of the galaxy on screen for Wallpaper Engine. See [Live wallpapers](#live-wallpapers-wallpaper-engine).
 - **No dependencies.** Plain JavaScript and WebGL2, with no frameworks, no build step and no npm.
 
 ## Running it
@@ -59,6 +60,9 @@ nebula.config.armCount = 5;
 nebula.regenerate();
 
 nebula.flares.trigger(0);   // fire a tidal disruption flare now (black hole + flares on)
+
+// Record a wallpaper clip without the dialog (resolves to a video Blob):
+const clip = await nebula.recordWallpaper({ width: 1920, height: 1080, fps: 30, seconds: 30, format: 'mp4' });
 ```
 
 ## Presets
@@ -82,9 +86,44 @@ With [Claude Code](https://claude.com/claude-code), type `/preset <description>`
 python3 .claude/skills/preset/validate.py --all
 ```
 
+## Live wallpapers (Wallpaper Engine)
+
+The **Wallpaper** button at the bottom of the control panel records the galaxy on screen as a looping video you can use as a live desktop wallpaper with [Wallpaper Engine](https://store.steampowered.com/app/431960/Wallpaper_Engine/) on Steam.
+
+- **Loops seamlessly.** The galaxy's speed is nudged a few percent so its arms turn exactly one arm-spacing per clip, the camera's sway repeats once per clip, and the last few seconds blend into the first. Flares are timed so they never cross the loop point.
+- **Smooth at any resolution.** Frames are rendered one at a time and encoded in the browser (WebCodecs), not screen-captured, so a 4K clip comes out just as smooth as a 1080p one. It just takes longer to make.
+- **Ready for Wallpaper Engine.** MP4 (H.264) is the default and works for local wallpapers and Steam Workshop uploads. WebM is offered too, for local wallpapers only.
+
+### Make the clip
+
+1. Open NEBULA and set up the look you want: pick a preset or adjust the sliders, then drag and zoom to frame it. The clip starts from exactly what's on screen.
+2. Decide on camera motion. With **Cinematic camera** on, the clip gently sways and breathes. Turn it off for a still camera, where only the galaxy itself turns.
+3. Click **Wallpaper** at the bottom of the panel and choose:
+   - **Resolution:** *Your screen* matches your monitor (up to 4K). Pick 4K if you might use it on a bigger screen later.
+   - **Length:** 30 seconds is a good default. Longer clips loop less often but make bigger files.
+   - **Frame rate:** 30 fps suits the slow motion. 60 fps is a little smoother and twice the size.
+   - **Format:** MP4.
+4. Click **Record**. A progress bar shows how far along it is, and **Cancel** stops it. When it finishes, the file (for example `nebula-neon-whirlpool-1440p30-30s.mp4`) lands in your downloads folder.
+
+Recording needs a browser with WebCodecs: a recent Chrome, Edge or Firefox. It takes a few times the clip's length (a 20-second 1080p clip took about 40 seconds on a laptop with integrated graphics), and it's fine to switch tabs while it records. Collision mode can be recorded, but because the encounter plays forward, that clip won't loop seamlessly.
+
+### Set it as your wallpaper
+
+1. Copy the video to your Windows PC if you made it on another computer.
+2. Open **Wallpaper Engine** from Steam.
+3. Click **Wallpaper Editor** at the bottom left of the Wallpaper Engine window.
+4. Click **Create Wallpaper**, select the NEBULA video and click **Open**. The editor imports it as a video wallpaper.
+5. Give it a title (the galaxy's preset name works well), then choose **File → Apply Wallpaper** to put it on your desktop.
+6. Close the editor. The wallpaper now appears under **Installed** in the main window, where you can pick it for any monitor and adjust playback options.
+
+**If something looks off:**
+- *The video won't import or plays black:* use the MP4 version. Wallpaper Engine's help site also covers installing [LAV filters](https://help.wallpaperengine.io/en/videos/lav.html) for codec problems.
+- *A small hitch at the loop point:* the clip itself is seamless, but Windows' video playback can pause briefly when an MP4 restarts. A local WebM wallpaper with LAV filters installed usually loops more smoothly.
+- *It looks soft:* record at your monitor's native resolution, or at 4K.
+
 ## Tests
 
-The pure math (seeded random numbers, rotation curve, spiral arms, color temperature and the color filter) lives in [`src/math.js`](src/math.js) and has unit tests that use Node's built-in test runner. No dependencies, nothing to install:
+The pure math (seeded random numbers, rotation curve, spiral arms, color temperature, the color filter and the wallpaper loop timing) lives in [`src/math.js`](src/math.js). It has unit tests that use Node's built-in test runner, and so do the hand-written MP4 and WebM writers in `js/wallpaper/`. No dependencies, nothing to install:
 
 ```bash
 node --test tests/*.test.js
@@ -97,6 +136,7 @@ node --test tests/*.test.js
 - **Rendering** (`js/render/`): background, haze, stars and core glow are drawn additively into a half-float HDR buffer. Dust is drawn last as an absorbing layer, and then a hue-preserving ACES tone map produces the final image. The color filter is applied to the galaxy's own layers, not the tone map, so the background sky isn't tinted.
 - **Black hole** (`js/render/blackHole.js`): the accretion disk is a mesh drawn into the HDR buffer. The tone-map pass then applies a thin-lens mapping (`θ → θ − θE²/θ`) around the projected hole, which bends everything behind it, including the disk. Tidal disruption flares are drawn in the disk's shader.
 - **Collisions** (`js/galaxy/collision.js`): every star, haze and dust particle becomes a test particle in two moving potentials. The host is a logarithmic halo that matches the rotation curve exactly; the companion is a Plummer sphere. Positions are integrated with leapfrog and streamed to the GPU each frame. With black hole gravity on, a third, compact mass sits at the host's center and removes any particle that crosses its capture radius.
+- **Wallpaper recording** (`js/wallpaper/`): each frame is drawn at a fixed time step, captured from the canvas as a `VideoFrame` and encoded with WebCodecs (H.264 or VP9). Small hand-written muxers (`mp4.js`, `webm.js`) package the frames, so there are still no dependencies.
 - **Performance:** at the default 110,000 stars, collision mode simulates about 175,000 particles at roughly 5 ms of CPU time per frame. Lower the star count if it stutters.
 
 ## Project layout
@@ -113,7 +153,9 @@ js/gl/              WebGL2 context, shader programs, HDR framebuffer
 js/camera/          orbit camera with the cinematic auto-orbit
 js/ui/panel.js      control panel
 js/ui/presets.js    loads presets/ for the Preset dropdown
-src/math.js         pure math (random, rotation curve, spiral arms, color)
+js/ui/wallpaperDialog.js  the Wallpaper dialog
+js/wallpaper/       clip recorder (WebCodecs) and MP4 / WebM writers
+src/math.js         pure math (random, rotation curve, spiral arms, color, loops)
 tests/              unit tests (node --test)
 presets/            saved galaxy presets (JSON) and index.json
 ```
