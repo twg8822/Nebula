@@ -7,4 +7,4 @@
 //
 // Ω decreases with r, so inner stars lap outer ones and arms wind (trail).
 
-export { angularVelocity, circularSpeed } from '../../src/math.js';
+export { angularVelocity } from '../../src/math.js';

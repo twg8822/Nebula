@@ -43,8 +43,8 @@ export const params = {
   hazeBrightness:{ value: 1.0,   min: 0,    max: 4,      step: 0.05,  kind: 'uniform', label: 'Haze' },
   glow:          { value: 0.8,   min: 0,    max: 2.5,    step: 0.05,  kind: 'uniform', label: 'Glow intensity', random: [0.85, 1.25] }, // master scale on core glow + haze
   colorTemp:     { value: -0.37, min: -1,   max: 1,      step: 0.01,  kind: 'uniform', label: 'Color temperature', random: [-0.35, 0.35] }, // -1 cool … +1 warm
-  // Color filter: tints the light before tone mapping. Strength 0 multiplies by
-  // exactly 1, so it has no effect at all until used. No `random`: Randomize leaves it alone.
+  // Color filter: tints the galaxy's own light (not the background sky). Strength 0
+  // multiplies by exactly 1, so it has no effect at all until used. No `random`: Randomize leaves it alone.
   tintStrength:  { value: 0,     min: 0,    max: 1,      step: 0.01,  kind: 'uniform', label: 'Color filter' },
   tintHue:       { value: 0,     min: 0,    max: 360,    step: 1,     kind: 'uniform', label: 'Filter hue' },       // degrees: 0 red, 120 green, 240 blue
   dustOpacity:   { value: 1.0,   min: 0,    max: 4,      step: 0.05,  kind: 'uniform', label: 'Dust opacity',  random: [0.8, 1.3] },
@@ -86,12 +86,16 @@ export function sanitize(key, v) {
   return Number(snapped.toFixed(6));
 }
 
-/** Override config values from the URL query string, e.g. ?starCount=100000&seed=42 */
+/**
+ * Override config values from the URL query string, e.g. ?starCount=100000&seed=42.
+ * Values snap to range and step like slider and preset values (so ?armCount=2.5
+ * can't produce a fractional arm count).
+ */
 export function applyQueryOverrides(search = location.search) {
   for (const [key, raw] of new URLSearchParams(search)) {
     const v = Number(raw);
-    if (!params[key] || !Number.isFinite(v)) continue;
-    config[key] = Math.min(params[key].max, Math.max(params[key].min, v));
+    if (!params[key] || raw === '' || !Number.isFinite(v)) continue;
+    config[key] = sanitize(key, v);
   }
 }
 

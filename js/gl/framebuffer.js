@@ -8,6 +8,8 @@ export function createHDRTarget(gl, floatRenderable) {
   const target = {
     fbo,
     get texture() { return tex; },
+    /** False if RGBA16F wasn't available or wasn't renderable (8-bit fallback). */
+    get isFloat() { return useFloat; },
     width: 0,
     height: 0,
 

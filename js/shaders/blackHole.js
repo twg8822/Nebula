@@ -2,6 +2,9 @@
 // plane, drawn additively into the HDR buffer. The lensing that wraps it over
 // the shadow happens later, in the composite pass (see composite.js LENSING).
 
+/** Tidal disruption flare length in seconds (used by the shader and FlareTimer). */
+export const FLARE_LEN = 3.5;
+
 export const DISK_VS = /* glsl */ `#version 300 es
 layout(location = 0) in vec2 aPolar;   // radial fraction 0..1, angle φ
 uniform mat4  uViewProj;
@@ -34,7 +37,7 @@ uniform vec3  uTint;      // color filter; (1,1,1) = none
 out vec4 outColor;
 
 const float TAU = 6.2831853;
-const float FLARE_LEN = 3.5;  // seconds; keep in sync with js/render/blackHole.js
+const float FLARE_LEN = ${FLARE_LEN.toFixed(1)};  // seconds
 
 void main() {
   float r = vPolar.x;

@@ -1,15 +1,13 @@
 import { createProgram } from '../gl/program.js';
-import { DISK_VS, DISK_FS } from '../shaders/blackHole.js';
+import { DISK_VS, DISK_FS, FLARE_LEN } from '../shaders/blackHole.js';
 
 const SEGMENTS = 256;
 
 // Disk proportions relative to the Einstein radius (artistic, not to scale).
 export const BH_HORIZON = 0.5;
-export const BH_DISK_IN = 1.2;
-export const BH_DISK_OUT = 3.5;
+const BH_DISK_IN = 1.2;
+const BH_DISK_OUT = 3.5;
 
-/** Tidal disruption flare length in seconds (matches FLARE_LEN in the shader). */
-export const FLARE_LEN = 3.5;
 const FLARE_COOLDOWN = 4;
 
 /**
