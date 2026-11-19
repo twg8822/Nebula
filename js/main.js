@@ -17,6 +17,11 @@ const DEG = Math.PI / 180;
 const ORIGIN = [0, 0, 0];
 const COMPANION_INNER = [1.0, 0.86, 0.66];
 const COMPANION_OUTER = [0.95, 0.7, 0.45];
+// Camera distance per unit of galaxy radius: 26 at the default radius of 10,
+// and wider in collision mode so the companion and the tails fit.
+const FIT_DISTANCE = 2.6;
+const FIT_DISTANCE_COLLISION = 4.8;
+const PHOTON_RING = [0.8, 0.68, 0.52];  // × accretion glow
 
 const canvas = document.getElementById('nebula');
 const hud = document.getElementById('hud');
@@ -47,6 +52,7 @@ function start() {
   let dpr = 1;
   let sim = null;        // CollisionSim while collision mode is on
   let simTime = 0;
+  let fittedRadius = null;  // galaxy radius the camera distance was last fitted to
 
   function regenerate() {
     const t0 = performance.now();
@@ -60,18 +66,42 @@ function start() {
       for (const [layer, name] of [[stars, 'stars'], [haze, 'haze'], [dust, 'dust']]) {
         layer.setData(sim.layers[name], sim.positions(name));
       }
-      // Pull back so the incoming companion and the tails fit in frame.
-      if (!wasColliding) camera.goal.distance = Math.max(camera.goal.distance, 48);
     } else {
       stars.setData(galaxy.stars);
       haze.setData(galaxy.haze);
       dust.setData(galaxy.dust);
-      if (wasColliding) camera.goal.distance = camera.defaults.distance;
     }
+    fitCamera(wasColliding);
     const bg = generateBackground(config.seed, Math.floor(config.bgStarCount));
     background.setData(bg.data, bg.count);
     console.info(`[nebula] generated ${stars.count} stars${sim ? ' (collision)' : ''}, ${haze.count} haze, `
       + `${dust.count} dust in ${(performance.now() - t0).toFixed(1)} ms`);
+  }
+
+  // Frame the galaxy by its size. Only reacts when the radius or the mode
+  // changes, so a manual zoom survives other slider changes.
+  function fitCamera(wasColliding) {
+    const R = config.galaxyRadius;
+    camera.defaults.distance = FIT_DISTANCE * R;
+    if (sim) {
+      // Pull back so the incoming companion and the tails fit in frame.
+      if (!wasColliding || R !== fittedRadius) {
+        camera.goal.distance = Math.max(camera.goal.distance, FIT_DISTANCE_COLLISION * R);
+      }
+    } else if (wasColliding || R !== fittedRadius) {
+      camera.goal.distance = camera.defaults.distance;
+    }
+    fittedRadius = R;
+  }
+
+  // Centre the galaxy in the space left of the panel (when it's open and
+  // leaves at least half the window free).
+  function panelShift() {
+    const el = panel.element;
+    if (document.body.classList.contains('ui-hidden') || el.classList.contains('collapsed')) return 0;
+    const W = canvas.clientWidth;
+    const free = el.getBoundingClientRect().left;
+    return free > W * 0.5 && free < W ? free / W - 1 : 0;
   }
 
   function resize() {
@@ -160,6 +190,7 @@ function start() {
   let realTime = 0;
   let frames = 0;
   let fpsClock = 0;
+  let firstFrame = true;
 
   function frame(now) {
     const dt = Math.min((now - last) / 1000, 0.1);
@@ -194,6 +225,11 @@ function start() {
     camera.targetGoal[0] = tg[0];
     camera.targetGoal[1] = tg[1];
     camera.targetGoal[2] = tg[2];
+    camera.shiftGoal = panelShift();
+    if (firstFrame) {
+      camera.snap();  // start framed, not gliding in
+      firstFrame = false;
+    }
     camera.update(width / height, dt, {
       auto: !!config.autoOrbit,
       orbitSpeed: config.orbitSpeed,
@@ -225,8 +261,12 @@ function start() {
       armLock: config.armLock,
       pointScale,
     };
-    haze.draw({ ...orbit, sizeScale: 1, intensity: config.hazeBrightness * config.glow });
-    stars.draw({ ...orbit, sizeScale: config.starSize });
+    // The color filter tints the galaxy's light only, so the sky stays natural.
+    const tint = colorFilter(config.tintHue, config.tintStrength);
+    const cores = sim ? { a: sim.H, b: sim.C, radiusB: sim.companionRadius } : null;
+    haze.draw({ ...orbit, sizeScale: 1, intensity: config.hazeBrightness * config.glow, tint,
+      edgeFade: config.galaxyRadius, cores });
+    stars.draw({ ...orbit, sizeScale: config.starSize, tint });
     gl.blendFunc(gl.ONE, gl.ONE);
     core.draw({
       viewProj: camera.viewProj,
@@ -236,6 +276,7 @@ function start() {
       width,
       height,
       center: hostCenter,
+      tint,
     });
     if (sim) {
       core.draw({
@@ -248,6 +289,7 @@ function start() {
         center: sim.C,
         colorInner: COMPANION_INNER,
         colorOuter: COMPANION_OUTER,
+        tint,
       });
     }
     if (config.blackHole) {
@@ -261,6 +303,7 @@ function start() {
         time: simTime,
         flareAge: flares.age,
         flarePhi: flares.phi,
+        tint,
       });
     }
     dust.draw({ ...orbit, sizeScale: 1, intensity: config.dustOpacity });
@@ -271,13 +314,14 @@ function start() {
       const sp = projectToScreen(camera.viewProj, hostCenter, width, height);
       if (sp) {
         const thetaE = (config.bhMass * pointScale) / sp.w;
-        lens = { x: sp.x, y: sp.y, thetaE, horizon: thetaE * BH_HORIZON };
+        // Photon ring: the accretion disk's hot color, scaled with its glow.
+        const ring = PHOTON_RING.map((c, i) => c * config.bhDiskBrightness * tint[i]);
+        lens = { x: sp.x, y: sp.y, thetaE, horizon: thetaE * BH_HORIZON, ring };
       }
     }
     compositor.draw(hdr.texture, {
       exposure: config.exposure,
       temperature: config.colorTemp,
-      tint: colorFilter(config.tintHue, config.tintStrength),
       width,
       height,
       lens,

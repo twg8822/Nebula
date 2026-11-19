@@ -75,6 +75,7 @@ export class CollisionSim {
     const compR = R * sq;
     this.soft = 0.35 * compR;               // Plummer scale length
     this.companionBulge = cfg.bulgeRadius * sq;
+    this.companionRadius = compR;
 
     const comp = generateGalaxy({
       ...cfg,

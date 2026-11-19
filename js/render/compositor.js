@@ -3,7 +3,9 @@ import { COMPOSITE_VS, COMPOSITE_FS, CORE_VS, CORE_FS } from '../shaders/composi
 import { transform } from '../math/mat4.js';
 import { colorFilter } from '../../src/math.js';
 
-// The color filter math lives in src/math.js; re-exported for main.js.
+// The color filter math lives in src/math.js; re-exported for main.js. The
+// filter is applied per galaxy layer (stars, haze, core glow, accretion disk),
+// not in the tone-map pass, so the background sky keeps its natural color.
 export { colorFilter };
 
 /**
@@ -30,7 +32,7 @@ export class CoreGlow {
   }
 
   draw({ viewProj, pointScale, radius, intensity, width, height,
-    center = ORIGIN, colorInner = WARM_INNER, colorOuter = WARM_OUTER }) {
+    center = ORIGIN, colorInner = WARM_INNER, colorOuter = WARM_OUTER, tint = NO_TINT }) {
     if (intensity <= 0) return;
     const sp = projectToScreen(viewProj, center, width, height);
     if (!sp) return; // behind camera
@@ -39,8 +41,8 @@ export class CoreGlow {
     gl.uniform2f(prog.loc('uCenter'), sp.x, sp.y);
     gl.uniform1f(prog.loc('uRadius'), (radius * pointScale) / sp.w);
     gl.uniform1f(prog.loc('uIntensity'), intensity);
-    gl.uniform3fv(prog.loc('uColorInner'), colorInner);
-    gl.uniform3fv(prog.loc('uColorOuter'), colorOuter);
+    gl.uniform3fv(prog.loc('uColorInner'), colorInner.map((c, i) => c * tint[i]));
+    gl.uniform3fv(prog.loc('uColorOuter'), colorOuter.map((c, i) => c * tint[i]));
     gl.bindVertexArray(this.vao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
@@ -62,10 +64,9 @@ export class Compositor {
   }
 
   /**
-   * lens: { x, y, thetaE, horizon } in pixels, or null.
-   * tint: color filter multiplier [r, g, b]; [1, 1, 1] = no filter.
+   * lens: { x, y, thetaE, horizon } in pixels plus ring [r, g, b], or null.
    */
-  draw(texture, { exposure, temperature = 0, tint = NO_TINT, width, height, lens = null }) {
+  draw(texture, { exposure, temperature = 0, width, height, lens = null }) {
     const { gl } = this;
     const prog = lens ? this.lensProg : this.prog;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -77,11 +78,11 @@ export class Compositor {
     gl.uniform1i(prog.loc('uScene'), 0);
     gl.uniform1f(prog.loc('uExposure'), exposure);
     gl.uniform1f(prog.loc('uTemperature'), temperature);
-    gl.uniform3fv(prog.loc('uTint'), tint);
     if (lens) {
       gl.uniform2f(prog.loc('uBH'), lens.x, lens.y);
       gl.uniform1f(prog.loc('uThetaE'), lens.thetaE);
       gl.uniform1f(prog.loc('uHorizon'), lens.horizon);
+      gl.uniform3fv(prog.loc('uRing'), lens.ring || [0, 0, 0]);
       gl.uniform2f(prog.loc('uResolution'), width, height);
     }
     gl.bindVertexArray(this.vao);

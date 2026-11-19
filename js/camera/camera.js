@@ -34,6 +34,11 @@ export class OrbitCamera {
     this.far = 500;
     this.target = [0, 0, 0];
     this.targetGoal = [0, 0, 0];
+    // Horizontal lens shift in NDC (-1…1): where the target sits on screen.
+    // Negative moves it left, e.g. to centre it in the space beside the panel.
+    // Only the projection shifts; the view direction is untouched.
+    this.shiftGoal = 0;
+    this.shift = 0;
     this.eye = [0, 0, distance];
 
     this._dragging = false;
@@ -52,6 +57,12 @@ export class OrbitCamera {
     this._viewRot = mat4.create();
 
     this._attach(canvas);
+  }
+
+  /** Jump straight to the goal (no easing), e.g. at startup. */
+  snap() {
+    Object.assign(this.s, this.goal);
+    this.shift = this.shiftGoal;
   }
 
   /** Glide back to the default framing; auto-orbit resumes shortly after. */
@@ -152,6 +163,7 @@ export class OrbitCamera {
     s.distance += (goal.distance - s.distance) * k;
     const kt = 1 - Math.exp(-dt * 1.5);
     for (let i = 0; i < 3; i++) this.target[i] += (this.targetGoal[i] - this.target[i]) * kt;
+    this.shift += (this.shiftGoal - this.shift) * (1 - Math.exp(-dt * 4));
 
     this._tilt = A * tilt * Math.sin(this._phase);
     this._breath = A * BREATH * Math.sin(this._phase * 0.6);
@@ -166,6 +178,8 @@ export class OrbitCamera {
     eye[2] = this.target[2] + this.distance * cp * Math.cos(this.yaw);
     mat4.lookAt(this.view, eye, this.target, [0, 1, 0]);
     mat4.perspective(this.proj, this.fov, aspect, this.near, this.far);
+    // Off-axis shift: clip.x += shift * clip.w, and clip.w = -z_view.
+    this.proj[8] -= this.shift;
     mat4.multiply(this.viewProj, this.proj, this.view);
 
     this._viewRot.set(this.view);

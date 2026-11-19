@@ -2,6 +2,8 @@ import { createProgram } from '../gl/program.js';
 import { STAR_VS, STAR_VS_POS, STAR_FS } from '../shaders/stars.js';
 import { STAR_STRIDE } from '../galaxy/generator.js';
 
+const NO_TINT = [1, 1, 1];
+
 /**
  * Draws a set of co-rotating galaxy particles. Configure the look with a
  * fragment shader and a blend mode:
@@ -68,7 +70,13 @@ export class StarLayer {
     }
   }
 
-  draw({ viewProj, time, v0, rc, patternSpeed, armLock, pointScale, sizeScale, intensity = 1 }) {
+  /** tint: color filter multiplier for emitted light; dust (absorption) passes [1, 1, 1]. */
+  /**
+   * edgeFade: galaxy radius to fade big sprites toward the rim (haze), 0 = off.
+   * cores: { a, b, radiusB } galaxy centres for that fade in collision mode.
+   */
+  draw({ viewProj, time, v0, rc, patternSpeed, armLock, pointScale, sizeScale, intensity = 1, tint = NO_TINT,
+    edgeFade = 0, cores = null }) {
     if (!this.count || intensity <= 0) return;
     const { gl } = this;
     const prog = this.positional ? this.posProg : this.prog;
@@ -87,6 +95,13 @@ export class StarLayer {
     gl.uniform1f(prog.loc('uSizeScale'), sizeScale);
     gl.uniform1f(prog.loc('uMaxSize'), this.maxSize);
     gl.uniform1f(prog.loc('uIntensity'), intensity);
+    gl.uniform3fv(prog.loc('uTint'), tint);
+    gl.uniform1f(prog.loc('uEdgeFade'), edgeFade);
+    if (cores) {
+      gl.uniform3fv(prog.loc('uCoreA'), cores.a);
+      gl.uniform3fv(prog.loc('uCoreB'), cores.b);
+      gl.uniform1f(prog.loc('uRadiusB'), cores.radiusB);
+    }
     gl.bindVertexArray(this.vao);
     gl.drawArrays(gl.POINTS, 0, this.count);
     gl.bindVertexArray(null);

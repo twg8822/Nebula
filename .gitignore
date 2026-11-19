@@ -31,3 +31,6 @@ build/
 screenshots/
 *.mp4
 *.webm
+
+# Playwright MCP output (screenshots, snapshots, logs)
+.playwright-mcp/

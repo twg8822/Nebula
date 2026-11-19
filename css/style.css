@@ -288,7 +288,7 @@ body.ui-hidden .ui {
   padding: 7px 11px;
   border-radius: 10px;
   font-size: 11px;
-  color: var(--text-dim);
+  color: rgba(234, 238, 248, 0.78);
   pointer-events: none;
   user-select: none;
 }
@@ -305,7 +305,7 @@ body.ui-hidden .ui {
   text-align: center;
 }
 
-.legend-mouse { opacity: 0.7; }
+.legend-mouse { opacity: 0.85; }
 
 /* ---------- fps HUD ---------- */
 

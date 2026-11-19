@@ -30,6 +30,7 @@ uniform float uBrightness;
 uniform float uDoppler;   // β at the inner edge
 uniform float uFlareAge;  // seconds since a tidal disruption began; < 0 = none
 uniform float uFlarePhi;  // disk angle where the star was shredded
+uniform vec3  uTint;      // color filter; (1,1,1) = none
 out vec4 outColor;
 
 const float TAU = 6.2831853;
@@ -81,5 +82,5 @@ void main() {
   light *= D * D * D;
   light *= mix(vec3(1.0), vec3(0.85, 0.95, 1.2), clamp(D - 1.0, 0.0, 1.0));
 
-  outColor = vec4(light * uBrightness, 1.0);
+  outColor = vec4(light * uBrightness * uTint, 1.0);
 }`;

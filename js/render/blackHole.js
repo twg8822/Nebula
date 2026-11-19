@@ -70,7 +70,7 @@ export class AccretionDisk {
     gl.bindVertexArray(null);
   }
 
-  draw({ viewProj, center, eye, mass, brightness, doppler, time, flareAge = -1, flarePhi = 0 }) {
+  draw({ viewProj, center, eye, mass, brightness, doppler, time, flareAge = -1, flarePhi = 0, tint = [1, 1, 1] }) {
     if (brightness <= 0) return;
     const { gl, prog } = this;
     gl.blendFunc(gl.ONE, gl.ONE);
@@ -85,6 +85,7 @@ export class AccretionDisk {
     gl.uniform1f(prog.loc('uDoppler'), doppler);
     gl.uniform1f(prog.loc('uFlareAge'), flareAge);
     gl.uniform1f(prog.loc('uFlarePhi'), flarePhi);
+    gl.uniform3fv(prog.loc('uTint'), tint);
     gl.bindVertexArray(this.vao);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.count);
     gl.bindVertexArray(null);

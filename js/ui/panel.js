@@ -42,6 +42,14 @@ const STORAGE_KEY = 'nebula.panelCollapsed';
 const HUE_NAMES = [[15, 'red'], [45, 'orange'], [70, 'yellow'], [160, 'green'], [200, 'cyan'], [260, 'blue'], [300, 'violet'], [340, 'magenta'], [360, 'red']];
 const hueName = (deg) => HUE_NAMES.find(([upTo]) => deg <= upTo)[1];
 
+/** True if applying these preset values would leave config exactly as it is now. */
+function matchesConfig(values) {
+  return Object.keys(params).every((key) => {
+    const v = key in values ? sanitize(key, values[key]) : params[key].value;
+    return Math.abs(v - config[key]) < 1e-9;
+  });
+}
+
 function el(tag, props = {}, children = []) {
   const node = Object.assign(document.createElement(tag), props);
   for (const c of children) node.append(c);
@@ -187,12 +195,18 @@ export function createPanel({ onChange, onRandomize, onPreset = () => {} }) {
 
   sync();
 
-  /** Fill the dropdown; the row stays hidden if there are no presets. */
+  /**
+   * Fill the dropdown; the row stays hidden if there are no presets. If the
+   * current settings already match a preset (e.g. the defaults at startup),
+   * show that preset instead of "Custom".
+   */
   const setPresets = (list) => {
     presetList = list;
     presetSelect.replaceChildren(el('option', { value: '', textContent: 'Custom' }),
       ...list.map((preset, i) => el('option', { value: String(i), textContent: preset.name })));
     presetRow.hidden = list.length === 0;
+    const match = list.findIndex((preset) => matchesConfig(preset.values));
+    presetSelect.value = match >= 0 ? String(match) : '';
   };
 
   return { sync, setPresets, markCustom, element: panel };

@@ -5,22 +5,33 @@
 export { SPRITE_FS as STAR_FS } from './common.js';
 
 // Position source, spliced into the shared vertex shader below.
+// EDGE (haze only): fade start and end (fraction of the radius), then sprite
+// size and brightness beyond the end. Gentle in the normal disk so the arms
+// stay soft and puffy; strong in collision tails, where gas is sparse.
 const ANALYTIC = {
-  decl: '',
+  decl: 'const vec4 EDGE = vec4(0.75, 1.15, 0.8, 0.6);',
   body: `
   float r = aOrbit.x;
   // Rotation curve v(r) = v0 * r / sqrt(r² + rc²)  =>  Ω(r) = v0 / sqrt(r² + rc²)
   float omega = uV0 * inversesqrt(r * r + uRc * uRc);
   omega = mix(omega, uPatternSpeed, clamp(aLock * uArmLock, 0.0, 1.0));
   float th = aOrbit.y + omega * uTime;
-  vec3 p = vec3(r * cos(th), aOrbit.z, r * sin(th));`,
+  vec3 p = vec3(r * cos(th), aOrbit.z, r * sin(th));
+  float rn = r / max(uEdgeFade, 1e-3);   // radius as a fraction of the galaxy's`,
 };
 
 // Collision mode: world positions integrated on the CPU (js/galaxy/collision.js).
 const POSITIONAL = {
-  decl: 'layout(location = 3) in vec3 aPos;     // world position from the N-body sim',
+  decl: `layout(location = 3) in vec3 aPos;     // world position from the N-body sim
+const vec4 EDGE = vec4(0.6, 1.1, 0.55, 0.3);
+uniform vec3  uCoreA;         // host centre
+uniform vec3  uCoreB;         // companion centre
+uniform float uRadiusB;       // companion radius`,
   body: `
-  vec3 p = aPos;`,
+  vec3 p = aPos;
+  // Distance from the nearer galaxy, as a fraction of its radius: > 1 means
+  // the particle has been pulled out into a bridge or tail.
+  float rn = min(length(p - uCoreA) / max(uEdgeFade, 1e-3), length(p - uCoreB) / max(uRadiusB, 1e-3));`,
 };
 
 const starVS = ({ decl, body }) => /* glsl */ `#version 300 es
@@ -40,6 +51,8 @@ uniform float uSizeScale;
 uniform float uMaxSize;       // pixels
 uniform float uIntensity;
 uniform float uNearFade;      // >0: fade out within this distance of the camera
+uniform vec3  uTint;          // color filter; (1,1,1) = none
+uniform float uEdgeFade;      // >0 (haze): galaxy radius; sprites shrink and dim toward the rim
 
 out vec3 vColor;
 
@@ -47,14 +60,17 @@ void main() {${body}
 
   gl_Position = uViewProj * vec4(p, 1.0);
 
-  float size = aOrbit.w * uSizeScale * uPointScale / max(gl_Position.w, 1e-3);
+  // Where the gas thins out (the rim, and especially tidal tails) single big
+  // sprites read as separate cotton balls: shrink and dim them there.
+  float edge = uEdgeFade > 0.0 ? 1.0 - smoothstep(EDGE.x, EDGE.y, rn) : 1.0;
+  float size = aOrbit.w * uSizeScale * mix(EDGE.z, 1.0, edge) * uPointScale / max(gl_Position.w, 1e-3);
   float px = clamp(size, 1.5, uMaxSize);
   // Sub-minimum sprites get dimmed so distant particles don't over-brighten.
   float energy = min(1.0, (size * size) / (px * px));
   // Big soft sprites (haze, dust) fade near the camera instead of becoming fog.
   float fade = uNearFade > 0.0 ? smoothstep(uNearFade * 0.3, uNearFade, gl_Position.w) : 1.0;
   gl_PointSize = px;
-  vColor = aColor.rgb * aColor.a * energy * fade * uIntensity;
+  vColor = aColor.rgb * aColor.a * energy * fade * mix(EDGE.w, 1.0, edge) * uIntensity * uTint;
 }`;
 
 export const STAR_VS = starVS(ANALYTIC);

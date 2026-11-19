@@ -24,7 +24,7 @@ How the knobs read on screen:
 
 | Vibe | Knobs |
 |---|---|
-| Any strong color (blood red, emerald, violet, toxic green…) | Color filter: `tintStrength` 0.3–0.7 with `tintHue` in degrees (0 red, 30 orange, 55 yellow, 120 green, 180 cyan, 230 blue, 280 violet, 320 magenta). Leave it at 0 (off) unless a color is the point; `colorTemp` alone only reaches amber/ice blue |
+| Any strong color (blood red, emerald, violet, toxic green…) | Color filter (tints the galaxy only; the sky stays natural): `tintStrength` 0.3–0.7 with `tintHue` in degrees (0 red, 30 orange, 55 yellow, 120 green, 180 cyan, 230 blue, 280 violet, 320 magenta). Leave it at 0 (off) unless a color is the point; `colorTemp` alone only reaches amber/ice blue |
 | Cool / icy / blue | `colorTemp` −0.3…−0.8, higher `youngFraction` (0.45–0.7), `hazeBrightness` up |
 | Warm / golden / ancient | `colorTemp` +0.3…+0.8, `youngFraction` 0.1–0.25, bigger `bulgeRadius`/`bulgeFraction`, fewer `knotRate` |
 | Tightly wound / elegant | `pitchDeg` 8–13 (small = tight), `armSpread` 0.2–0.28 |
@@ -49,13 +49,14 @@ Rules:
 - Keep `starCount` at or below 150000 unless the user asks for more; collision mode simulates about 1.6× that many particles on the CPU. Keep dynamics internals (`v0`, `rc`, `windingRate`, `corotation`, `armLock`, `galaxyRadius`) at their defaults unless the vibe clearly needs them; `armLock` below 1 makes arms wind into rings.
 - Pick a fresh `seed` (any integer 0–999999) so the preset gets its own galaxy.
 - The user prefers soft, puffy galaxies. Don't push contrast, sharpness or star size to extremes unless asked.
-- The camera's viewing angle isn't a config key, so presets can't set it. Only `autoOrbit`, `orbitSpeed` and `tiltDeg` are camera settings.
+- The camera's viewing angle isn't a config key, so presets can't set it. Only `autoOrbit`, `orbitSpeed` and `tiltDeg` are camera settings. The zoom follows `galaxyRadius` automatically (2.6× the radius, 4.8× in collision mode), so a bigger galaxy still fits the frame.
+- For a dark, high-contrast ("neon") look, keep the core small and dim (`bulgeFraction` ≤ 0.1, `coreGlow` ≤ 0.2) and `hazeBrightness` low; a bright core with strong tint blows out into a pastel blob. See `presets/neon-whirlpool.json`.
 
 ## 3. Save it
 
 - Name: 1–3 evocative words from the description, kebab-case (`neon-whirlpool`). If `presets/<name>.json` already exists, ask before overwriting, or pick another name.
 - Write `presets/<name>.json`: one flat object with **every** key from config.js, in config.js order, numbers only, 2-space indent. No comments and no extra keys (the file name is the display name: `neon-whirlpool` shows as "Neon Whirlpool").
-- Add `"<name>.json"` to `presets/index.json` (a JSON array of file names, sorted). This is what the dropdown reads on static hosts.
+- Add `"<name>.json"` to `presets/index.json` (a JSON array sorted by file name). This is what the dropdown reads on static hosts. If the display name needs characters a file name can't hold (an apostrophe, say), add `{"file": "<name>.json", "name": "Display Name"}` instead of the bare file name.
 
 ## 4. Validate (must pass)
 

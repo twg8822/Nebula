@@ -8,7 +8,8 @@ Usage (from the repo root):
 
 Checks: every config key present, no unknown keys, numbers only, within
 [min, max], on the step grid, 0/1 switches are exactly 0 or 1, and
-presets/index.json lists exactly the preset files on disk.
+presets/index.json lists exactly the preset files on disk (sorted; an entry may be
+{"file": ..., "name": ...} to set a display name).
 """
 import json
 import re
@@ -74,8 +75,20 @@ def check_index():
         listed = json.loads(index.read_text())
     except json.JSONDecodeError as e:
         return [f'index.json: {e}']
-    if not isinstance(listed, list) or not all(isinstance(x, str) for x in listed):
-        return ['index.json must be a JSON array of file names']
+    # Entries are file names, or {"file": ..., "name": ...} to give a display
+    # name the file name can't spell (e.g. an apostrophe).
+    def entry_file(x):
+        if isinstance(x, str):
+            return x
+        if isinstance(x, dict) and isinstance(x.get('file'), str) and isinstance(x.get('name'), str) \
+                and set(x) == {'file', 'name'} and x['name'].strip():
+            return x['file']
+        return None
+    if not isinstance(listed, list) or any(entry_file(x) is None for x in listed):
+        return ['index.json must be a JSON array of file names or {"file", "name"} objects']
+    listed = [entry_file(x) for x in listed]
+    if listed != sorted(listed):
+        return ['index.json must be sorted by file name']
     errors = [f'index.json lists "{x}" but the file is missing' for x in listed if x not in on_disk]
     errors += [f'index.json is missing "{x}"' for x in on_disk if x not in listed]
     return errors

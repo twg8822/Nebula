@@ -23,7 +23,6 @@ in vec2 vUv;
 uniform sampler2D uScene;
 uniform float uExposure;
 uniform float uTemperature;  // -1 cool … 0 neutral … +1 warm
-uniform vec3  uTint;         // color filter multiplier; exactly (1,1,1) when off
 out vec4 outColor;
 
 #ifdef LENSING
@@ -31,10 +30,12 @@ out vec4 outColor;
 uniform vec2  uBH;           // black hole position
 uniform float uThetaE;       // Einstein radius
 uniform float uHorizon;      // shadow radius
+uniform vec3  uRing;         // photon ring color × brightness (0 = none)
 uniform vec2  uResolution;
 #endif
 
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
+const float BLEACH_FULL = 2.5;   // channel overflow (×) where white-hot bleaching is complete
 
 // White-balance tint, normalized so overall brightness stays constant.
 vec3 temperatureTint(float t) {
@@ -70,9 +71,15 @@ void main() {
   // The secondary image is tiny and aliases without mipmaps: dim it.
   float lensGain = mix(0.55, 1.0, smoothstep(0.85 * uThetaE, 1.1 * uThetaE, th));
   lensGain *= smoothstep(uHorizon * 0.94, uHorizon * 1.04, th);  // the shadow
-  vec3 c = max(texture(uScene, uv).rgb, 0.0) * lensGain * uExposure * temperatureTint(uTemperature) * uTint;
+  vec3 c = max(texture(uScene, uv).rgb, 0.0) * lensGain;
+  // Photon ring: light that skims the hole piles up in a thin bright ring
+  // just outside the shadow, so the edge reads as bent light, not a flat disc.
+  float ringW = max(1.2, uHorizon * 0.045);
+  float ringD = (th - uHorizon * 1.05) / ringW;
+  c += uRing * exp(-ringD * ringD);
+  c *= uExposure * temperatureTint(uTemperature);
 #else
-  vec3 c = max(texture(uScene, vUv).rgb, 0.0) * uExposure * temperatureTint(uTemperature) * uTint;
+  vec3 c = max(texture(uScene, vUv).rgb, 0.0) * uExposure * temperatureTint(uTemperature);
 #endif
 
   // Tone-map luminance and keep hue, so a dense warm core stays yellow-orange
@@ -80,8 +87,15 @@ void main() {
   // very brightest pixels still bleach toward white like a real exposure.
   float L = dot(c, LUMA);
   vec3 hp = c * (acesL(L) / max(L, 1e-6));
-  hp /= max(1.0, max(hp.r, max(hp.g, hp.b)));
-  c = mix(hp, aces(c), 0.3);
+  // When a channel would overflow, hp is scaled back to keep the hue, which
+  // flattens a bright core into one uniform disc. Instead, the further it
+  // overflows the more it bleaches toward white-hot, so the core keeps a
+  // gradient (white centre, coloured rim). Pixels that don't overflow use
+  // the original 0.3 blend exactly.
+  float over = max(hp.r, max(hp.g, hp.b));
+  hp /= max(1.0, over);
+  float bleach = 0.3 + 0.55 * smoothstep(1.0, BLEACH_FULL, over);
+  c = mix(hp, aces(c), bleach);
 
   c = pow(c, vec3(1.0 / 2.2));
   c += (hash(gl_FragCoord.xy) - 0.5) / 255.0;  // dither against banding

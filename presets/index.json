@@ -1,1 +1,10 @@
-["abyssal-bloom.json", "default.json", "devourers-waltz.json", "dying-ancient-giant.json", "dying-red-giant.json", "glacier-lace.json", "neon-whirlpool.json"]
+[
+  "abyssal-bloom.json",
+  "default.json",
+  {"file": "devourers-waltz.json", "name": "Devourer's Waltz"},
+  "dying-ancient-giant.json",
+  "dying-red-giant.json",
+  "glacier-lace.json",
+  "lavender-whirlpool.json",
+  "neon-whirlpool.json"
+]
